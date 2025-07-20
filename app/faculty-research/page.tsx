@@ -6,234 +6,19 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Mail, User, Building2, BookOpen, Search, GraduationCap, Award } from "lucide-react"
-
-interface Faculty {
-  id: string
-  first_name: string
-  last_name: string
-  email: string
-  department: string
-  position: string
-  expertise_areas: string[]
-  research_interests: string
-  publications_count: number
-  experience_years: number
-  phone?: string
-  office_location?: string
-}
+import { supabase } from "@/lib/supabase"
+import type { Faculty } from "@/lib/supabase"
 
 export default function FacultyResearchPage() {
   const [faculty, setFaculty] = useState<Faculty[]>([])
   const [filteredFaculty, setFilteredFaculty] = useState<Faculty[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDepartment, setSelectedDepartment] = useState("all")
 
   useEffect(() => {
-    // Mock data for faculty research profiles
-    const mockFaculty: Faculty[] = [
-      {
-        id: "1",
-        first_name: "Dr. P.",
-        last_name: "Surekha",
-        email: "principal@svlnsgdc.ac.in",
-        department: "Administration",
-        position: "Principal",
-        expertise_areas: ["Mathematics", "Academic Administration", "Higher Education Policy"],
-        research_interests:
-          "Educational policy development, institutional governance, and quality assurance in higher education. Focus on rural education development and community engagement.",
-        publications_count: 25,
-        experience_years: 20,
-        phone: "8247685902",
-        office_location: "Principal's Office",
-      },
-      {
-        id: "2",
-        first_name: "Dr. K.",
-        last_name: "Ramesh",
-        email: "ramesh@svlnsgdc.ac.in",
-        department: "Physics",
-        position: "Professor & Head",
-        expertise_areas: ["Applied Physics", "Condensed Matter Physics", "Materials Science"],
-        research_interests:
-          "Nanomaterials synthesis and characterization, semiconductor physics, and renewable energy applications. Special focus on solar cell materials and coastal environmental physics.",
-        publications_count: 42,
-        experience_years: 18,
-        office_location: "Physics Department, Room 201",
-      },
-      {
-        id: "3",
-        first_name: "Dr. M.",
-        last_name: "Lakshmi",
-        email: "lakshmi@svlnsgdc.ac.in",
-        department: "Chemistry",
-        position: "Associate Professor",
-        expertise_areas: ["Analytical Chemistry", "Environmental Chemistry", "Marine Chemistry"],
-        research_interests:
-          "Water quality analysis of coastal regions, heavy metal contamination studies, and development of eco-friendly analytical methods. Research on Bay of Bengal water chemistry.",
-        publications_count: 38,
-        experience_years: 15,
-        office_location: "Chemistry Lab, Block A",
-      },
-      {
-        id: "4",
-        first_name: "Dr. S.",
-        last_name: "Prasad",
-        email: "prasad@svlnsgdc.ac.in",
-        department: "Botany",
-        position: "Professor",
-        expertise_areas: ["Plant Ecology", "Coastal Botany", "Biodiversity Conservation"],
-        research_interests:
-          "Coastal vegetation studies, mangrove ecosystem conservation, and plant adaptation mechanisms in saline environments. Focus on indigenous plant species of Andhra Pradesh coast.",
-        publications_count: 35,
-        experience_years: 16,
-        office_location: "Botany Department, Herbarium",
-      },
-      {
-        id: "5",
-        first_name: "Dr. V.",
-        last_name: "Rao",
-        email: "vrao@svlnsgdc.ac.in",
-        department: "Zoology",
-        position: "Associate Professor",
-        expertise_areas: ["Marine Biology", "Coastal Ecology", "Fisheries Science"],
-        research_interests:
-          "Marine biodiversity of Bay of Bengal, fish population dynamics, and impact of climate change on coastal marine ecosystems. Collaborative research with local fishing communities.",
-        publications_count: 31,
-        experience_years: 14,
-        office_location: "Zoology Lab, Block B",
-      },
-      {
-        id: "6",
-        first_name: "Dr. G.",
-        last_name: "Krishna",
-        email: "krishna@svlnsgdc.ac.in",
-        department: "Mathematics",
-        position: "Professor",
-        expertise_areas: ["Applied Mathematics", "Statistics", "Mathematical Modeling"],
-        research_interests:
-          "Statistical analysis of environmental data, mathematical modeling of coastal processes, and operations research applications in rural development projects.",
-        publications_count: 28,
-        experience_years: 17,
-        office_location: "Mathematics Department, Room 105",
-      },
-      {
-        id: "7",
-        first_name: "Dr. R.",
-        last_name: "Devi",
-        email: "rdevi@svlnsgdc.ac.in",
-        department: "English",
-        position: "Associate Professor",
-        expertise_areas: ["English Literature", "Linguistics", "Communication Studies"],
-        research_interests:
-          "Contemporary Indian English literature, sociolinguistics of coastal communities, and effective communication strategies in multilingual academic environments.",
-        publications_count: 22,
-        experience_years: 12,
-        office_location: "English Department, Room 301",
-      },
-      {
-        id: "8",
-        first_name: "Dr. N.",
-        last_name: "Kumar",
-        email: "nkumar@svlnsgdc.ac.in",
-        department: "Telugu",
-        position: "Professor",
-        expertise_areas: ["Telugu Literature", "Regional Studies", "Cultural Heritage"],
-        research_interests:
-          "Classical and modern Telugu literature, oral traditions of coastal Andhra Pradesh, and preservation of regional cultural heritage through digital documentation.",
-        publications_count: 33,
-        experience_years: 19,
-        office_location: "Telugu Department, Room 205",
-      },
-      {
-        id: "9",
-        first_name: "Dr. P.",
-        last_name: "Reddy",
-        email: "preddy@svlnsgdc.ac.in",
-        department: "History",
-        position: "Associate Professor",
-        expertise_areas: ["Regional History", "Archaeology", "Cultural Studies"],
-        research_interests:
-          "Historical significance of Bheemunipatnam port, archaeological studies of coastal Andhra Pradesh, and documentation of local historical monuments and traditions.",
-        publications_count: 26,
-        experience_years: 13,
-        office_location: "History Department, Room 102",
-      },
-      {
-        id: "10",
-        first_name: "Dr. A.",
-        last_name: "Sharma",
-        email: "asharma@svlnsgdc.ac.in",
-        department: "Economics",
-        position: "Professor",
-        expertise_areas: ["Development Economics", "Rural Economics", "Coastal Economy"],
-        research_interests:
-          "Economic development of coastal communities, impact of fishing industry on local economy, and sustainable development models for rural areas.",
-        publications_count: 29,
-        experience_years: 15,
-        office_location: "Economics Department, Room 203",
-      },
-      {
-        id: "11",
-        first_name: "Dr. B.",
-        last_name: "Murthy",
-        email: "bmurthy@svlnsgdc.ac.in",
-        department: "Political Science",
-        position: "Associate Professor",
-        expertise_areas: ["Public Administration", "Governance", "Local Government"],
-        research_interests:
-          "Local governance systems, panchayati raj institutions, and public policy implementation in rural and coastal areas of Andhra Pradesh.",
-        publications_count: 24,
-        experience_years: 11,
-        office_location: "Political Science Department, Room 304",
-      },
-      {
-        id: "12",
-        first_name: "Dr. L.",
-        last_name: "Srinivas",
-        email: "lsrinivas@svlnsgdc.ac.in",
-        department: "Commerce",
-        position: "Professor",
-        expertise_areas: ["Business Studies", "Financial Management", "Entrepreneurship"],
-        research_interests:
-          "Small business development in rural areas, microfinance impact studies, and promoting entrepreneurship among coastal communities.",
-        publications_count: 27,
-        experience_years: 14,
-        office_location: "Commerce Department, Room 401",
-      },
-      {
-        id: "13",
-        first_name: "Dr. T.",
-        last_name: "Vijaya",
-        email: "tvijaya@svlnsgdc.ac.in",
-        department: "Computer Science",
-        position: "Assistant Professor",
-        expertise_areas: ["Information Technology", "Digital Systems", "E-Learning"],
-        research_interests:
-          "Digital literacy in rural areas, e-learning platform development, and IT applications in education and local governance.",
-        publications_count: 18,
-        experience_years: 8,
-        office_location: "Computer Lab, Block C",
-      },
-      {
-        id: "14",
-        first_name: "Dr. K.",
-        last_name: "Madhavi",
-        email: "kmadhavi@svlnsgdc.ac.in",
-        department: "Library Science",
-        position: "Librarian",
-        expertise_areas: ["Library Science", "Information Management", "Digital Archives"],
-        research_interests:
-          "Digital preservation of local historical documents, information literacy programs, and development of institutional repositories for academic research.",
-        publications_count: 21,
-        experience_years: 12,
-        office_location: "Central Library",
-      },
-    ]
-
-    setFaculty(mockFaculty)
-    setFilteredFaculty(mockFaculty)
-    setLoading(false)
+    fetchFaculty()
   }, [])
 
   useEffect(() => {
@@ -246,7 +31,7 @@ export default function FacultyResearchPage() {
           member.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           member.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           member.expertise_areas.some((area) => area.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          member.research_interests.toLowerCase().includes(searchTerm.toLowerCase()),
+          (member.research_interests && member.research_interests.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
 
@@ -258,11 +43,34 @@ export default function FacultyResearchPage() {
     setFilteredFaculty(filtered)
   }, [searchTerm, selectedDepartment, faculty])
 
+  const fetchFaculty = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data, error } = await supabase.from("faculty").select("*").eq("is_active", true).order("department")
+
+      if (error) {
+        console.error("Supabase error:", error)
+        setError("Failed to load faculty data from database.")
+        return
+      }
+
+      setFaculty(data || [])
+      setFilteredFaculty(data || [])
+    } catch (error) {
+      console.error("Error fetching faculty:", error)
+      setError("An unexpected error occurred.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const departments = Array.from(new Set(faculty.map((member) => member.department)))
   const totalPublications = faculty.reduce((sum, member) => sum + member.publications_count, 0)
-  const averageExperience = Math.round(
-    faculty.reduce((sum, member) => sum + member.experience_years, 0) / faculty.length,
-  )
+  const averageExperience = faculty.length
+    ? Math.round(faculty.reduce((sum, member) => sum + member.experience_years, 0) / faculty.length)
+    : 0
 
   if (loading) {
     return (
@@ -271,6 +79,21 @@ export default function FacultyResearchPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading faculty research profiles...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button onClick={fetchFaculty} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -399,10 +222,12 @@ export default function FacultyResearchPage() {
                 </div>
 
                 {/* Research Interests */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700">Research Interests</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{member.research_interests}</p>
-                </div>
+                {member.research_interests && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Research Interests</h4>
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{member.research_interests}</p>
+                  </div>
+                )}
 
                 {/* Contact */}
                 <div className="pt-2 border-t border-gray-100 space-y-2">

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,44 +10,117 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Mail, Send, FileText, User, Building } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Mail, Link, FileText, CheckCircle, AlertCircle, Send, X, Plus } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
+
+interface SubmissionFormData {
+  title: string
+  abstract: string
+  keywords: string[]
+  articleType: string
+  subjectArea: string
+  authorName: string
+  authorEmail: string
+  authorAffiliation: string
+  coAuthors: string
+  coverLetter: string
+  manuscriptUrl: string
+  hasEthicsApproval: boolean
+  conflictOfInterest: string
+  suggestedReviewers: string
+  year: number
+}
 
 export default function SubmitPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SubmissionFormData>({
     title: "",
-    authors: "",
-    affiliation: "",
-    email: "",
-    phone: "",
+    abstract: "",
+    keywords: [],
     articleType: "",
     subjectArea: "",
-    abstract: "",
-    keywords: "",
+    authorName: "",
+    authorEmail: "",
+    authorAffiliation: "",
+    coAuthors: "",
     coverLetter: "",
-    funding: "",
-    conflicts: "",
-    ethics: false,
-    originality: false,
-    copyright: false,
+    manuscriptUrl: "",
+    hasEthicsApproval: false,
+    conflictOfInterest: "",
+    suggestedReviewers: "",
+    year: new Date().getFullYear(),
   })
 
-  const generateEmail = () => {
-    const subject = `Manuscript Submission - ${formData.title || "[Your Title]"}`
-    const body = `Dear Editorial Team,
+  const [keywordInput, setKeywordInput] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [urlError, setUrlError] = useState("")
 
-I am submitting my manuscript titled "${formData.title}" for consideration in the SVLNS GDC Multidisciplinary Journal.
+  const handleInputChange = (field: keyof SubmissionFormData, value: string | boolean | number | string[]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+
+    // Clear URL error when user starts typing
+    if (field === "manuscriptUrl") {
+      setUrlError("")
+    }
+  }
+
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return false
+
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === "http:" || urlObj.protocol === "https:"
+    } catch {
+      return false
+    }
+  }
+
+  const handleUrlBlur = () => {
+    if (formData.manuscriptUrl && !validateUrl(formData.manuscriptUrl)) {
+      setUrlError("Please enter a valid URL (e.g., https://example.com/manuscript.pdf)")
+    }
+  }
+
+  const addKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        keywords: [...prev.keywords, keywordInput.trim()],
+      }))
+      setKeywordInput("")
+    }
+  }
+
+  const removeKeyword = (keyword: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      keywords: prev.keywords.filter((k) => k !== keyword),
+    }))
+  }
+
+  const generateEmailContent = () => {
+    const emailBody = `
+Subject: Manuscript Submission - ${formData.title}
+
+Dear Editorial Team,
+
+I am submitting my manuscript titled "${formData.title}" for consideration for publication in SVLNS GDC Multidisciplinary Journal.
 
 MANUSCRIPT DETAILS:
-Title: ${formData.title}
-Article Type: ${formData.articleType}
-Subject Area: ${formData.subjectArea}
-Keywords: ${formData.keywords}
+- Title: ${formData.title}
+- Article Type: ${formData.articleType}
+- Subject Area: ${formData.subjectArea}
+- Keywords: ${formData.keywords.join(", ")}
+- Manuscript URL: ${formData.manuscriptUrl}
 
 AUTHOR INFORMATION:
-Authors: ${formData.authors}
-Corresponding Author Email: ${formData.email}
-Phone: ${formData.phone}
-Institutional Affiliation: ${formData.affiliation}
+- Corresponding Author: ${formData.authorName}
+- Email: ${formData.authorEmail}
+- Affiliation: ${formData.authorAffiliation}
+${formData.coAuthors ? `- Co-authors: ${formData.coAuthors}` : ""}
 
 ABSTRACT:
 ${formData.abstract}
@@ -53,349 +128,492 @@ ${formData.abstract}
 COVER LETTER:
 ${formData.coverLetter}
 
-FUNDING INFORMATION:
-${formData.funding || "No funding received"}
-
-CONFLICT OF INTEREST:
-${formData.conflicts || "No conflicts of interest to declare"}
-
 DECLARATIONS:
-☑ I confirm this work is original and has not been published elsewhere
-☑ I agree to transfer copyright to the journal upon acceptance
-☑ Ethics approval obtained where applicable
+- Ethics Approval: ${formData.hasEthicsApproval ? "Yes" : "No"}
+- Conflict of Interest: ${formData.conflictOfInterest || "None declared"}
+${formData.suggestedReviewers ? `- Suggested Reviewers: ${formData.suggestedReviewers}` : ""}
 
-Please find attached:
-- Complete manuscript file
-- All figures and tables
-- Supplementary materials (if any)
+The manuscript can be accessed at: ${formData.manuscriptUrl}
 
-I look forward to your response.
+I confirm that this manuscript has not been published elsewhere and is not under consideration by any other journal.
+
+Thank you for your consideration.
 
 Best regards,
-${formData.authors.split(",")[0] || "[Your Name]"}
-${formData.affiliation}
-${formData.email}`
+${formData.authorName}
+${formData.authorEmail}
+${formData.authorAffiliation}
+    `.trim()
 
-    const mailtoLink = `mailto:svlns.gdc@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    window.open(mailtoLink)
+    return emailBody
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validate URL before submission
+    if (!validateUrl(formData.manuscriptUrl)) {
+      setUrlError("Please enter a valid manuscript URL")
+      toast.error("Please provide a valid manuscript URL")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Save to Supabase submissions table
+      const { data, error } = await supabase.from("submissions").insert({
+        title: formData.title,
+        authors: `${formData.authorName}${formData.coAuthors ? `, ${formData.coAuthors}` : ""}`,
+        email: formData.authorEmail,
+        institution: formData.authorAffiliation,
+        abstract: formData.abstract,
+        keywords: formData.keywords.join(", "),
+        pdf_url: formData.manuscriptUrl,
+        year: formData.year,
+        status: "submitted",
+      })
+
+      if (error) {
+        console.error("Supabase error:", error)
+        toast.error("Failed to save submission to database")
+        return
+      }
+
+      toast.success("Submission saved successfully!")
+
+      // Generate email content
+      const emailContent = generateEmailContent()
+
+      // Create mailto link
+      const subject = encodeURIComponent(`Manuscript Submission - ${formData.title}`)
+      const body = encodeURIComponent(emailContent)
+      const mailtoLink = `mailto:svlns.gdc@gmail.com?subject=${subject}&body=${body}`
+
+      // Open email client
+      window.open(mailtoLink, "_blank")
+
+      // Mark as submitted
+      setSubmitted(true)
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
+        <div className="max-w-2xl mx-auto px-4">
+          <Card className="border-0 shadow-xl">
+            <CardContent className="p-8 text-center">
+              <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-green-800 mb-4">Submission Successful!</h2>
+              <p className="text-gray-600 mb-6">
+                Your manuscript has been saved to our database and your email client should have opened with a
+                pre-filled submission email. The manuscript URL has been included in the email for the editorial team to
+                access your work.
+              </p>
+              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                <p className="text-sm text-blue-800">
+                  <strong>Email Address:</strong> svlns.gdc@gmail.com
+                  <br />
+                  <strong>Subject:</strong> Manuscript Submission - {formData.title}
+                  <br />
+                  <strong>Manuscript URL:</strong> {formData.manuscriptUrl}
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setSubmitted(false)
+                  setFormData({
+                    title: "",
+                    abstract: "",
+                    keywords: [],
+                    articleType: "",
+                    subjectArea: "",
+                    authorName: "",
+                    authorEmail: "",
+                    authorAffiliation: "",
+                    coAuthors: "",
+                    coverLetter: "",
+                    manuscriptUrl: "",
+                    hasEthicsApproval: false,
+                    conflictOfInterest: "",
+                    suggestedReviewers: "",
+                    year: new Date().getFullYear(),
+                  })
+                }}
+              >
+                Submit Another Article
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
       <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Submit Your Manuscript</h1>
-          <p className="text-xl text-gray-600">Complete the form below to generate a professional submission email</p>
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
+            Submit Your Manuscript
+          </h1>
+          <p className="text-xl text-gray-700">SVLNS GDC Multidisciplinary Journal</p>
         </div>
 
-        <Card className="mb-8">
-          <CardHeader>
+        {/* Submission Guidelines Alert */}
+        <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-50 to-purple-50 mb-8">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-6 w-6 text-blue-600" />
-              <span>Manuscript Information</span>
+              <FileText className="h-6 w-6" />
+              <span>Submission Information</span>
             </CardTitle>
-            <CardDescription>Provide details about your manuscript and research</CardDescription>
+            <CardDescription className="text-blue-100">
+              Please read our submission guidelines before proceeding
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="title">Manuscript Title *</Label>
-              <Input
-                id="title"
-                placeholder="Enter the complete title of your manuscript"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="articleType">Article Type *</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, articleType: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select article type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="research">Research Article</SelectItem>
-                    <SelectItem value="review">Review Article</SelectItem>
-                    <SelectItem value="short">Short Communication</SelectItem>
-                    <SelectItem value="case">Case Study</SelectItem>
-                    <SelectItem value="editorial">Editorial</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="subjectArea">Subject Area *</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, subjectArea: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject area" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="physics">Physics</SelectItem>
-                    <SelectItem value="chemistry">Chemistry</SelectItem>
-                    <SelectItem value="biology">Biology</SelectItem>
-                    <SelectItem value="mathematics">Mathematics</SelectItem>
-                    <SelectItem value="computer-science">Computer Science</SelectItem>
-                    <SelectItem value="psychology">Psychology</SelectItem>
-                    <SelectItem value="sociology">Sociology</SelectItem>
-                    <SelectItem value="economics">Economics</SelectItem>
-                    <SelectItem value="political-science">Political Science</SelectItem>
-                    <SelectItem value="literature">Literature</SelectItem>
-                    <SelectItem value="philosophy">Philosophy</SelectItem>
-                    <SelectItem value="history">History</SelectItem>
-                    <SelectItem value="environmental">Environmental Studies</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="social-development">Social Development</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="abstract">Abstract *</Label>
-              <Textarea
-                id="abstract"
-                placeholder="Provide a comprehensive abstract (250-350 words)"
-                rows={6}
-                value={formData.abstract}
-                onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="keywords">Keywords *</Label>
-              <Input
-                id="keywords"
-                placeholder="Enter 5-7 keywords separated by commas"
-                value={formData.keywords}
-                onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                required
-              />
-            </div>
+          <CardContent className="p-6">
+            <Alert>
+              <Mail className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Submission Email:</strong> svlns.gdc@gmail.com
+                <br />
+                This form will save your submission to our database and prepare your submission email with all required
+                information including your manuscript URL.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-6 w-6 text-green-600" />
-              <span>Author Information</span>
-            </CardTitle>
-            <CardDescription>Provide details about all authors and corresponding author</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="authors">All Authors *</Label>
-              <Input
-                id="authors"
-                placeholder="List all authors (e.g., John Smith, Jane Doe, Robert Johnson)"
-                value={formData.authors}
-                onChange={(e) => setFormData({ ...formData, authors: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="affiliation">Institutional Affiliation *</Label>
-              <Input
-                id="affiliation"
-                placeholder="Your institution/organization name"
-                value={formData.affiliation}
-                onChange={(e) => setFormData({ ...formData, affiliation: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Manuscript Information */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Manuscript Information</CardTitle>
+              <CardDescription>Basic details about your research article</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="email">Corresponding Author Email *</Label>
+                <Label htmlFor="title">Article Title *</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@institution.edu"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Enter the full title of your manuscript"
                   required
                 />
               </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="articleType">Article Type *</Label>
+                  <Select
+                    value={formData.articleType}
+                    onValueChange={(value) => handleInputChange("articleType", value)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select article type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="research_article">Research Article</SelectItem>
+                      <SelectItem value="review_article">Review Article</SelectItem>
+                      <SelectItem value="short_communication">Short Communication</SelectItem>
+                      <SelectItem value="case_study">Case Study</SelectItem>
+                      <SelectItem value="editorial">Editorial</SelectItem>
+                      <SelectItem value="letter_to_editor">Letter to Editor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="subjectArea">Subject Area *</Label>
+                  <Select
+                    value={formData.subjectArea}
+                    onValueChange={(value) => handleInputChange("subjectArea", value)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject area" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Computer Science">Computer Science</SelectItem>
+                      <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      <SelectItem value="Physics">Physics</SelectItem>
+                      <SelectItem value="Chemistry">Chemistry</SelectItem>
+                      <SelectItem value="Biology">Biology</SelectItem>
+                      <SelectItem value="Botany">Botany</SelectItem>
+                      <SelectItem value="Zoology">Zoology</SelectItem>
+                      <SelectItem value="Economics">Economics</SelectItem>
+                      <SelectItem value="Commerce">Commerce</SelectItem>
+                      <SelectItem value="English Literature">English Literature</SelectItem>
+                      <SelectItem value="Telugu Literature">Telugu Literature</SelectItem>
+                      <SelectItem value="History">History</SelectItem>
+                      <SelectItem value="Political Science">Political Science</SelectItem>
+                      <SelectItem value="Social Sciences">Social Sciences</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="abstract">Abstract *</Label>
+                <Textarea
+                  id="abstract"
+                  value={formData.abstract}
+                  onChange={(e) => handleInputChange("abstract", e.target.value)}
+                  placeholder="Enter your abstract (250-400 words)"
+                  rows={6}
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {formData.abstract.split(" ").filter((word) => word.length > 0).length} words
+                </p>
+              </div>
+
+              {/* Keywords Section */}
+              <div className="space-y-2">
+                <Label>Keywords *</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
+                    placeholder="Enter a keyword"
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
+                  />
+                  <Button type="button" onClick={addKeyword} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.keywords.map((keyword, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {keyword}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeKeyword(keyword)} />
+                    </Badge>
+                  ))}
+                </div>
+                {formData.keywords.length === 0 && (
+                  <p className="text-sm text-red-500">Please add at least one keyword</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="year">Publication Year</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91-XXX-XXX-XXXX"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  id="year"
+                  type="number"
+                  value={formData.year}
+                  onChange={(e) =>
+                    handleInputChange("year", Number.parseInt(e.target.value) || new Date().getFullYear())
+                  }
+                  min="2024"
+                  max="2030"
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Building className="h-6 w-6 text-purple-600" />
-              <span>Additional Information</span>
-            </CardTitle>
-            <CardDescription>Cover letter, funding, and other relevant information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="coverLetter">Cover Letter *</Label>
-              <Textarea
-                id="coverLetter"
-                placeholder="Explain the significance of your work, its contribution to the field, and why it should be published in our journal"
-                rows={5}
-                value={formData.coverLetter}
-                onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-                required
-              />
-            </div>
+          {/* Manuscript URL Section */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Link className="h-5 w-5" />
+                <span>Manuscript Access</span>
+              </CardTitle>
+              <CardDescription>Provide a URL where the editorial team can access your manuscript</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="manuscriptUrl">Manuscript URL *</Label>
+                <Input
+                  id="manuscriptUrl"
+                  type="url"
+                  value={formData.manuscriptUrl}
+                  onChange={(e) => handleInputChange("manuscriptUrl", e.target.value)}
+                  onBlur={handleUrlBlur}
+                  placeholder="https://example.com/your-manuscript.pdf"
+                  required
+                  className={urlError ? "border-red-500" : ""}
+                />
+                {urlError && <p className="text-sm text-red-500 mt-1">{urlError}</p>}
+                <p className="text-sm text-gray-500 mt-1">
+                  Please provide a direct link to your manuscript file (PDF, DOC, or DOCX). You can use cloud storage
+                  services like Google Drive, Dropbox, OneDrive, or your institutional repository.
+                </p>
+              </div>
 
-            <div>
-              <Label htmlFor="funding">Funding Information</Label>
-              <Textarea
-                id="funding"
-                placeholder="List any funding sources, grant numbers, or write 'No funding received'"
-                rows={3}
-                value={formData.funding}
-                onChange={(e) => setFormData({ ...formData, funding: e.target.value })}
-              />
-            </div>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Supported URL examples:</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Google Drive: Make sure the file is set to "Anyone with the link can view"</li>
+                    <li>Dropbox: Use the direct download link</li>
+                    <li>OneDrive: Share with "Anyone with the link can view"</li>
+                    <li>Institutional repository or personal website</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="conflicts">Conflict of Interest Statement</Label>
-              <Textarea
-                id="conflicts"
-                placeholder="Declare any conflicts of interest or write 'No conflicts of interest to declare'"
-                rows={3}
-                value={formData.conflicts}
-                onChange={(e) => setFormData({ ...formData, conflicts: e.target.value })}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Author Information */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Author Information</CardTitle>
+              <CardDescription>Details about the corresponding author and co-authors</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="authorName">Corresponding Author Name *</Label>
+                  <Input
+                    id="authorName"
+                    value={formData.authorName}
+                    onChange={(e) => handleInputChange("authorName", e.target.value)}
+                    placeholder="Full name"
+                    required
+                  />
+                </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Declarations and Agreements</CardTitle>
-            <CardDescription>Please confirm the following statements by checking the boxes</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="originality"
-                checked={formData.originality}
-                onCheckedChange={(checked) => setFormData({ ...formData, originality: checked as boolean })}
-                required
-              />
-              <Label htmlFor="originality" className="text-sm leading-relaxed">
-                I confirm that this work is original, has not been published elsewhere, and is not under consideration
-                by any other journal. All sources have been properly cited and acknowledged.
-              </Label>
-            </div>
+                <div>
+                  <Label htmlFor="authorEmail">Email Address *</Label>
+                  <Input
+                    id="authorEmail"
+                    type="email"
+                    value={formData.authorEmail}
+                    onChange={(e) => handleInputChange("authorEmail", e.target.value)}
+                    placeholder="your.email@institution.edu"
+                    required
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="copyright"
-                checked={formData.copyright}
-                onCheckedChange={(checked) => setFormData({ ...formData, copyright: checked as boolean })}
-                required
-              />
-              <Label htmlFor="copyright" className="text-sm leading-relaxed">
-                I agree to transfer copyright to SVLNS GDC Multidisciplinary Journal upon acceptance of the manuscript
-                for publication, understanding that the work will be published under open access terms.
-              </Label>
-            </div>
+              <div>
+                <Label htmlFor="authorAffiliation">Affiliation *</Label>
+                <Input
+                  id="authorAffiliation"
+                  value={formData.authorAffiliation}
+                  onChange={(e) => handleInputChange("authorAffiliation", e.target.value)}
+                  placeholder="Institution, Department, City, Country"
+                  required
+                />
+              </div>
 
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="ethics"
-                checked={formData.ethics}
-                onCheckedChange={(checked) => setFormData({ ...formData, ethics: checked as boolean })}
-              />
-              <Label htmlFor="ethics" className="text-sm leading-relaxed">
-                Where applicable, I confirm that this research has received appropriate ethics approval and complies
-                with institutional and national guidelines for research involving human subjects or animals.
-              </Label>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <Label htmlFor="coAuthors">Co-authors (if any)</Label>
+                <Textarea
+                  id="coAuthors"
+                  value={formData.coAuthors}
+                  onChange={(e) => handleInputChange("coAuthors", e.target.value)}
+                  placeholder="List co-authors with their affiliations"
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="mb-8 border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-blue-800">
-              <Mail className="h-6 w-6" />
-              <span>Generate Submission Email</span>
-            </CardTitle>
-            <CardDescription className="text-blue-700">
-              Click the button below to generate a professional submission email with all your information
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-blue-800">
-                This will open your email client with a pre-filled message containing all the information you've
-                provided. You'll need to attach your manuscript file and any supplementary materials before sending.
-              </p>
-              <div className="flex gap-4">
-                <Button
-                  onClick={generateEmail}
-                  disabled={
-                    !formData.title ||
-                    !formData.authors ||
-                    !formData.email ||
-                    !formData.abstract ||
-                    !formData.originality ||
-                    !formData.copyright
-                  }
-                  className="flex-1"
-                >
+          {/* Additional Information */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Additional Information</CardTitle>
+              <CardDescription>Cover letter and declarations</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="coverLetter">Cover Letter *</Label>
+                <Textarea
+                  id="coverLetter"
+                  value={formData.coverLetter}
+                  onChange={(e) => handleInputChange("coverLetter", e.target.value)}
+                  placeholder="Brief description of your research, its significance, and why it's suitable for this journal"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ethicsApproval"
+                    checked={formData.hasEthicsApproval}
+                    onCheckedChange={(checked) => handleInputChange("hasEthicsApproval", checked as boolean)}
+                  />
+                  <Label htmlFor="ethicsApproval">This research has ethics approval (if applicable)</Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="conflictOfInterest">Conflict of Interest Statement</Label>
+                  <Textarea
+                    id="conflictOfInterest"
+                    value={formData.conflictOfInterest}
+                    onChange={(e) => handleInputChange("conflictOfInterest", e.target.value)}
+                    placeholder="Declare any conflicts of interest or state 'None'"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="suggestedReviewers">Suggested Reviewers (Optional)</Label>
+                  <Textarea
+                    id="suggestedReviewers"
+                    value={formData.suggestedReviewers}
+                    onChange={(e) => handleInputChange("suggestedReviewers", e.target.value)}
+                    placeholder="Suggest 2-3 potential reviewers with their email addresses"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="text-center">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={
+                isSubmitting ||
+                !formData.title ||
+                !formData.abstract ||
+                !formData.authorName ||
+                !formData.authorEmail ||
+                !formData.articleType ||
+                !formData.subjectArea ||
+                !formData.coverLetter ||
+                !formData.manuscriptUrl ||
+                formData.keywords.length === 0 ||
+                !!urlError
+              }
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <Link className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
                   <Send className="h-4 w-4 mr-2" />
-                  Generate Submission Email
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href="mailto:svlns.gdc@gmail.com">Email Directly</a>
-                </Button>
-              </div>
-              <p className="text-xs text-blue-600">
-                <strong>Submission Email:</strong> svlns.gdc@gmail.com
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+                  Submit Your Manuscript
+                </>
+              )}
+            </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>What to Attach</CardTitle>
-            <CardDescription>Remember to attach these files to your submission email</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-3">Required Attachments</h4>
-                <ul className="space-y-2 text-sm">
-                  <li>• Complete manuscript file (.docx or .pdf)</li>
-                  <li>• All figures and tables (high resolution)</li>
-                  <li>• Author declaration form (if available)</li>
-                  <li>• Copyright transfer agreement (if available)</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3">Optional Attachments</h4>
-                <ul className="space-y-2 text-sm">
-                  <li>• Supplementary materials</li>
-                  <li>• Ethics approval certificate</li>
-                  <li>• Data availability statement</li>
-                  <li>• Suggested reviewers list</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="text-sm text-gray-600 mt-4">
+              This will save your submission to our database and open your email client with a pre-filled message to{" "}
+              <strong>svlns.gdc@gmail.com</strong>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   )

@@ -1,61 +1,125 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Download, Eye, Calendar, BookOpen, Sparkles } from "lucide-react"
-
-const archiveData = [
-  {
-    volume: 1,
-    issue: 1,
-    year: 2024,
-    title: "Inaugural Issue: Foundations of Multidisciplinary Research",
-    publishDate: "March 2024",
-    articles: 11,
-    pages: "1-156",
-    specialIssue: true,
-    coverImage: "/placeholder.svg?height=200&width=150",
-  },
-]
-
-const featuredArticles = [
-  {
-    title: "Multidisciplinary Research: Bridging Academic Boundaries in the 21st Century",
-    authors: "Dr. Rajesh Kumar Sharma, Dr. Priya Patel",
-    volume: 1,
-    issue: 1,
-    pages: "1-18",
-    doi: "10.1234/svlns.2024.1.1.001",
-    abstract:
-      "This foundational article explores the importance of multidisciplinary research approaches in addressing complex contemporary challenges...",
-    keywords: ["Multidisciplinary Research", "Academic Collaboration", "Research Methodology", "Higher Education"],
-  },
-  {
-    title: "Coastal Andhra Pradesh: Environmental and Social Dynamics",
-    authors: "Dr. Sunita Rao, Dr. Venkata Rao",
-    volume: 1,
-    issue: 1,
-    pages: "19-35",
-    doi: "10.1234/svlns.2024.1.1.002",
-    abstract:
-      "An comprehensive analysis of the environmental and social factors shaping coastal Andhra Pradesh, with focus on Bheemunipatanam region...",
-    keywords: ["Coastal Studies", "Environmental Science", "Social Dynamics", "Andhra Pradesh"],
-  },
-  {
-    title: "Educational Innovation in Government Degree Colleges: A Case Study",
-    authors: "Dr. Krishna Murthy, Dr. Lakshmi Devi",
-    volume: 1,
-    issue: 1,
-    pages: "36-52",
-    doi: "10.1234/svlns.2024.1.1.003",
-    abstract:
-      "This study examines innovative educational practices in government degree colleges, drawing insights from SVLNS GDC's experience...",
-    keywords: ["Educational Innovation", "Government Colleges", "Higher Education", "Teaching Methods"],
-  },
-]
+import { supabase } from "@/lib/supabase"
+import type { Issue, Article } from "@/lib/supabase"
 
 export default function ArchivesPage() {
+  const [issues, setIssues] = useState<Issue[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
+  const [filteredIssues, setFilteredIssues] = useState<Issue[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedYear, setSelectedYear] = useState("all")
+  const [selectedSubject, setSelectedSubject] = useState("all")
+
+  useEffect(() => {
+    fetchArchiveData()
+  }, [])
+
+  useEffect(() => {
+    let filtered = issues
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (issue) =>
+          issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (issue.description && issue.description.toLowerCase().includes(searchTerm.toLowerCase())),
+      )
+    }
+
+    // Filter by year
+    if (selectedYear !== "all") {
+      filtered = filtered.filter((issue) => issue.year.toString() === selectedYear)
+    }
+
+    setFilteredIssues(filtered)
+  }, [searchTerm, selectedYear, issues])
+
+  const fetchArchiveData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Fetch all published issues
+      const { data: issuesData, error: issuesError } = await supabase
+        .from("issues")
+        .select("*")
+        .eq("status", "published")
+        .order("year", { ascending: false })
+        .order("volume", { ascending: false })
+        .order("issue_number", { ascending: false })
+
+      if (issuesError) {
+        console.error("Issues error:", issuesError)
+        setError("Failed to load issues from database.")
+        return
+      }
+
+      setIssues(issuesData || [])
+      setFilteredIssues(issuesData || [])
+
+      // Fetch all published articles
+      const { data: articlesData, error: articlesError } = await supabase
+        .from("articles")
+        .select(`
+          *,
+          primary_author:authors(first_name,last_name,affiliation)
+        `)
+        .eq("status", "published")
+        .order("publication_date", { ascending: false })
+
+      if (articlesError) {
+        console.error("Articles error:", articlesError)
+        // Don't set error here, just log it
+      } else {
+        setArticles(articlesData || [])
+      }
+    } catch (error) {
+      console.error("Error fetching archive data:", error)
+      setError("An unexpected error occurred.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const years = Array.from(new Set(issues.map((issue) => issue.year))).sort((a, b) => b - a)
+  const subjects = Array.from(new Set(articles.map((article) => article.subject_area))).sort()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading archives...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={fetchArchiveData}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
       <div className="max-w-6xl mx-auto px-4">
@@ -66,9 +130,6 @@ export default function ArchivesPage() {
           <p className="text-xl text-gray-700">
             Complete collection of published issues and articles with full-text access
           </p>
-          <Badge className="mt-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
-            🎉 Inaugural Issue Available
-          </Badge>
         </div>
 
         {/* Search and Filter Section */}
@@ -80,39 +141,41 @@ export default function ArchivesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
                 <Input
-                  placeholder="Search articles, authors, keywords..."
+                  placeholder="Search issues, articles, authors..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full border-purple-200 focus:border-purple-500"
                 />
               </div>
-              <Select>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="border-purple-200 focus:border-purple-500">
                   <SelectValue placeholder="Select Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2024">2024</SelectItem>
                   <SelectItem value="all">All Years</SelectItem>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                 <SelectTrigger className="border-purple-200 focus:border-purple-500">
                   <SelectValue placeholder="Subject Area" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Subjects</SelectItem>
-                  <SelectItem value="sciences">Sciences</SelectItem>
-                  <SelectItem value="social">Social Sciences</SelectItem>
-                  <SelectItem value="humanities">Humanities</SelectItem>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="mt-4">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -122,131 +185,146 @@ export default function ArchivesPage() {
           <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
             Published Issues
           </h2>
-          <div className="grid md:grid-cols-1 gap-6">
-            {archiveData.map((issue, index) => (
-              <Card
-                key={index}
-                className="hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-r from-orange-50 to-pink-50"
-              >
-                <CardHeader className="bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-t-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl text-white">
-                        Volume {issue.volume}, Issue {issue.issue} ({issue.year})
-                      </CardTitle>
-                      <CardDescription className="text-orange-100 text-base font-medium mt-1">
-                        {issue.title}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      {issue.specialIssue && (
-                        <Badge className="bg-yellow-400 text-yellow-900 border-0">Special Issue</Badge>
-                      )}
-                      <Badge className="bg-green-400 text-green-900 border-0">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        First Issue
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex space-x-4">
-                    <img
-                      src={issue.coverImage || "/placeholder.svg"}
-                      alt={`Volume ${issue.volume} Issue ${issue.issue} Cover`}
-                      className="w-20 h-28 object-cover rounded border-2 border-orange-200"
-                    />
-                    <div className="flex-1">
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-orange-500" />
-                          <span>Published: {issue.publishDate}</span>
-                        </li>
-                        <li className="flex items-center space-x-2">
-                          <BookOpen className="h-4 w-4 text-pink-500" />
-                          <span>{issue.articles} Articles</span>
-                        </li>
-                        <li className="flex items-center space-x-2">
-                          <span className="text-gray-600">Pages: {issue.pages}</span>
-                        </li>
-                      </ul>
-                      <div className="mt-4 flex space-x-2">
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Issue
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </Button>
+          {filteredIssues.length === 0 ? (
+            <Card className="text-center p-8">
+              <p className="text-gray-600">No issues found matching your criteria.</p>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-1 gap-6">
+              {filteredIssues.map((issue, index) => (
+                <Card
+                  key={issue.id}
+                  className="hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-r from-orange-50 to-pink-50"
+                >
+                  <CardHeader className="bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-t-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-xl text-white">
+                          Volume {issue.volume}, Issue {issue.issue_number} ({issue.year})
+                        </CardTitle>
+                        <CardDescription className="text-orange-100 text-base font-medium mt-1">
+                          {issue.title}
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        {issue.is_special_issue && (
+                          <Badge className="bg-yellow-400 text-yellow-900 border-0">Special Issue</Badge>
+                        )}
+                        <Badge className="bg-green-400 text-green-900 border-0">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Published
+                        </Badge>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="flex space-x-4">
+                      <div className="flex-1">
+                        {issue.description && <p className="text-gray-700 mb-4">{issue.description}</p>}
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center space-x-2">
+                            <Calendar className="h-4 w-4 text-orange-500" />
+                            <span>Published: {new Date(issue.publication_date).toLocaleDateString()}</span>
+                          </li>
+                          <li className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-pink-500" />
+                            <span>{issue.article_count} Articles</span>
+                          </li>
+                          {issue.total_pages && (
+                            <li className="flex items-center space-x-2">
+                              <span className="text-gray-600">Pages: {issue.total_pages}</span>
+                            </li>
+                          )}
+                        </ul>
+                        <div className="mt-4 flex space-x-2">
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Issue
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Featured Articles */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Featured Articles from Inaugural Issue
-          </h2>
-          <div className="space-y-6">
-            {featuredArticles.map((article, index) => (
-              <Card
-                key={index}
-                className="hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur"
-              >
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
-                  <CardTitle className="text-lg leading-tight text-white">{article.title}</CardTitle>
-                  <CardDescription className="text-blue-100">
-                    <span className="font-medium">{article.authors}</span>
-                    <br />
-                    <span className="text-sm">
-                      Vol. {article.volume}, Issue {article.issue}, pp. {article.pages} | DOI: {article.doi}
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <p className="text-sm text-gray-700 mb-4 line-clamp-3">{article.abstract}</p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {article.keywords.map((keyword, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Read Full Text
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-purple-500 text-purple-600 hover:bg-purple-50 bg-transparent"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+        {articles.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Featured Articles
+            </h2>
+            <div className="space-y-6">
+              {articles.slice(0, 5).map((article, index) => (
+                <Card
+                  key={article.id}
+                  className="hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur"
+                >
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+                    <CardTitle className="text-lg leading-tight text-white">{article.title}</CardTitle>
+                    <CardDescription className="text-blue-100">
+                      <span className="font-medium">
+                        {article.primary_author
+                          ? `${article.primary_author.first_name} ${article.primary_author.last_name}`
+                          : "Unknown Author"}
+                      </span>
+                      {article.co_authors && article.co_authors.length > 0 && (
+                        <span>, {article.co_authors.map((author: any) => author.name).join(", ")}</span>
+                      )}
+                      <br />
+                      <span className="text-sm">
+                        Vol. {article.volume}, Issue {article.issue}
+                        {article.pages && `, pp. ${article.pages}`}
+                        {article.doi && ` | DOI: ${article.doi}`}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <p className="text-sm text-gray-700 mb-4 line-clamp-3">{article.abstract}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {article.keywords.map((keyword, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Read Full Text
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-purple-500 text-purple-600 hover:bg-purple-50 bg-transparent"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Archive Statistics */}
         <Card className="mb-8 border-0 shadow-xl bg-gradient-to-r from-green-50 to-blue-50">
@@ -259,54 +337,22 @@ export default function ArchivesPage() {
           <CardContent className="p-6">
             <div className="grid md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">1</div>
-                <div className="text-sm text-gray-600">Issue Published</div>
+                <div className="text-3xl font-bold text-green-600 mb-2">{issues.length}</div>
+                <div className="text-sm text-gray-600">Issues Published</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">11</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">{articles.length}</div>
                 <div className="text-sm text-gray-600">Total Articles</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">156</div>
+                <div className="text-3xl font-bold text-purple-600 mb-2">
+                  {issues.reduce((sum, issue) => sum + issue.article_count, 0)}
+                </div>
                 <div className="text-sm text-gray-600">Total Pages</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">18</div>
-                <div className="text-sm text-gray-600">Contributing Authors</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Archival Policy */}
-        <Card className="border-0 shadow-xl bg-white/90 backdrop-blur">
-          <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg">
-            <CardTitle>Archival Policy</CardTitle>
-            <CardDescription className="text-indigo-100">
-              Long-term preservation and access to published content
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-3 text-indigo-700">Digital Preservation</h4>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li>• Permanent digital archiving in multiple formats</li>
-                  <li>• Regular backup and migration procedures</li>
-                  <li>• Integration with national repositories</li>
-                  <li>• LOCKSS (Lots of Copies Keep Stuff Safe) participation</li>
-                  <li>• DOI assignment for permanent identification</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3 text-purple-700">Access Guarantee</h4>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li>• Perpetual open access to all published content</li>
-                  <li>• No paywall or subscription barriers</li>
-                  <li>• Multiple download formats (PDF, HTML, XML)</li>
-                  <li>• Mobile-friendly responsive design</li>
-                  <li>• Search engine optimization for discoverability</li>
-                </ul>
+                <div className="text-3xl font-bold text-orange-600 mb-2">{subjects.length}</div>
+                <div className="text-sm text-gray-600">Subject Areas</div>
               </div>
             </div>
           </CardContent>
