@@ -13,7 +13,8 @@ DROP TABLE IF EXISTS faculty CASCADE;
 DROP TABLE IF EXISTS editorial_board CASCADE;
 DROP TABLE IF EXISTS authors CASCADE;
 DROP TABLE IF EXISTS journal_settings CASCADE;
-DROP TABLE IF EXISTS reviewers CASCADE; -- Ensure reviewers table is also dropped and recreated
+DROP TABLE IF EXISTS reviewers CASCADE;
+DROP TABLE IF EXISTS submissions CASCADE;
 
 -- Journal Settings Table
 CREATE TABLE journal_settings (
@@ -21,6 +22,22 @@ CREATE TABLE journal_settings (
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT NOT NULL,
     description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Submissions Table (for manuscript submissions)
+CREATE TABLE submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    authors TEXT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    institution TEXT NOT NULL,
+    abstract TEXT NOT NULL,
+    keywords TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    pdf_url TEXT,
+    status VARCHAR(50) DEFAULT 'submitted' CHECK (status IN ('submitted', 'under_review', 'accepted', 'rejected')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -54,7 +71,7 @@ CREATE TABLE editorial_board (
     expertise_areas JSONB DEFAULT '[]'::jsonb,
     bio TEXT,
     profile_image_url TEXT,
-    order_position INTEGER DEFAULT 0, -- This column is crucial for sorting
+    order_position INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -191,6 +208,8 @@ CREATE TABLE github_links (
 );
 
 -- Create indexes for better performance
+CREATE INDEX idx_submissions_status ON submissions(status);
+CREATE INDEX idx_submissions_year ON submissions(year);
 CREATE INDEX idx_articles_primary_author ON articles(primary_author_id);
 CREATE INDEX idx_articles_status ON articles(status);
 CREATE INDEX idx_articles_publication_date ON articles(publication_date);
@@ -217,6 +236,7 @@ $$ language 'plpgsql';
 
 -- Apply updated_at triggers to all tables
 CREATE TRIGGER update_journal_settings_updated_at BEFORE UPDATE ON journal_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_submissions_updated_at BEFORE UPDATE ON submissions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_authors_updated_at BEFORE UPDATE ON authors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_editorial_board_updated_at BEFORE UPDATE ON editorial_board FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_faculty_updated_at BEFORE UPDATE ON faculty FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

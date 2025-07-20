@@ -32,7 +32,7 @@ export default function HomePage() {
                 alt="SVLNS GDC Logo"
                 width={120}
                 height={120}
-                className="rounded-full border-4 border-white shadow-2xl"
+                className="rounded-full border-4 border-white shadow-2xl bg-white p-2"
               />
               <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
                 Est. 1984
@@ -190,7 +190,7 @@ export default function HomePage() {
                 <div className="flex justify-center gap-4 mt-4">
                   <Badge className="bg-white text-blue-600">Volume 1</Badge>
                   <Badge className="bg-white text-blue-600">Issue 1</Badge>
-                  <Badge className="bg-white text-blue-600">March 2024</Badge>
+                  <Badge className="bg-white text-blue-600">January 2025</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -331,7 +331,7 @@ export default function HomePage() {
                 <Phone className="h-8 w-8" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Phone</h3>
-              <p className="text-blue-100">+91-8842-123456</p>
+              <p className="text-blue-100">+91-8247-685902</p>
             </div>
 
             <div className="flex flex-col items-center">

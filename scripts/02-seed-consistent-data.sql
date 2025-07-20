@@ -23,15 +23,15 @@ INSERT INTO authors (first_name, last_name, email, affiliation, department, posi
 ('Dr. M.', 'Lakshmi', 'lakshmi@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Chemistry', 'Associate Professor', '0000-0001-3456-7890', 'Associate Professor specializing in environmental chemistry with focus on coastal pollution and remediation strategies.', NULL, 'Chemistry Lab, Block A'),
 ('Dr. S.', 'Prasad', 'prasad@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Botany', 'Professor', '0000-0001-4567-8901', 'Professor of Botany with expertise in coastal plant ecology and traditional medicinal plant research.', NULL, 'Botany Department, Herbarium'),
 ('Dr. V.', 'Rao', 'vrao@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Zoology', 'Associate Professor', '0000-0001-5678-9012', 'Associate Professor specializing in marine biology with focus on coastal ecosystem conservation and fisheries research.', NULL, 'Zoology Lab, Block B'),
-('Dr. G.', 'Krishna', 'krishna@svlnsgdc.ac.in', 'Mathematics', 'Professor', '0000-0001-6789-0123', 'Professor of Mathematics with expertise in applied mathematics and statistical modeling for biological systems.', NULL, 'Mathematics Department, Room 105'),
-('Dr. R.', 'Devi', 'rdevi@svlnsgdc.ac.in', 'English', 'Associate Professor', '0000-0001-7890-1234', 'Associate Professor of English with research focus on Indian English literature and innovative language teaching methods.', NULL, 'English Department, Room 301'),
-('Dr. N.', 'Kumar', 'nkumar@svlnsgdc.ac.in', 'Telugu', 'Professor', '0000-0001-8901-2345', 'Professor of Telugu with expertise in classical literature and cultural heritage preservation of coastal Andhra Pradesh.', NULL, 'Telugu Department, Room 205'),
-('Dr. P.', 'Reddy', 'preddy@svlnsgdc.ac.in', 'History', 'Associate Professor', '0000-0001-9012-3456', 'Associate Professor specializing in regional history with focus on maritime trade and archaeological studies of coastal regions.', NULL, 'History Department, Room 102'),
-('Dr. A.', 'Sharma', 'asharma@svlnsgdc.ac.in', 'Economics', 'Professor', '0000-0001-0123-4567', 'Professor of Economics with expertise in rural development and agricultural economics, focusing on policy implications for coastal communities.', NULL, 'Economics Department, Room 203'),
-('Dr. B.', 'Murthy', 'bmurthy@svlnsgdc.ac.in', 'Political Science', 'Associate Professor', '0000-0001-1234-5679', 'Associate Professor of Political Science with research focus on governance structures and public policy implementation.', NULL, 'Political Science Department, Room 304'),
-('Dr. L.', 'Srinivas', 'lsrinivas@svlnsgdc.ac.in', 'Commerce', 'Professor', '0000-0001-2345-6780', 'Professor of Commerce with expertise in business development and financial management, particularly for rural and coastal enterprises.', NULL, 'Commerce Department, Room 401'),
-('Dr. T.', 'Vijaya', 'tvijaya@svlnsgdc.ac.in', 'Computer Science', 'Assistant Professor', '0000-0001-3456-7891', 'Assistant Professor of Computer Science specializing in educational technology and digital transformation initiatives.', NULL, 'Computer Lab, Block C'),
-('Dr. K.', 'Madhavi', 'kmadhavi@svlnsgdc.ac.in', 'Library Science', 'Librarian', '0000-0001-4567-8902', 'Librarian and information specialist with expertise in research methodology and digital library management.', NULL, 'Central Library');
+('Dr. G.', 'Krishna', 'krishna@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Mathematics', 'Professor', '0000-0001-6789-0123', 'Professor of Mathematics with expertise in applied mathematics and statistical modeling for biological systems.', NULL, 'Mathematics Department, Room 105'),
+('Dr. R.', 'Devi', 'rdevi@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'English', 'Associate Professor', '0000-0001-7890-1234', 'Associate Professor of English with research focus on Indian English literature and innovative language teaching methods.', NULL, 'English Department, Room 301'),
+('Dr. N.', 'Kumar', 'nkumar@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Telugu', 'Professor', '0000-0001-8901-2345', 'Professor of Telugu with expertise in classical literature and cultural heritage preservation of coastal Andhra Pradesh.', NULL, 'Telugu Department, Room 205'),
+('Dr. P.', 'Reddy', 'preddy@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'History', 'Associate Professor', '0000-0001-9012-3456', 'Associate Professor specializing in regional history with focus on maritime trade and archaeological studies of coastal regions.', NULL, 'History Department, Room 102'),
+('Dr. A.', 'Sharma', 'asharma@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Economics', 'Professor', '0000-0001-0123-4567', 'Professor of Economics with expertise in rural development and agricultural economics, focusing on policy implications for coastal communities.', NULL, 'Economics Department, Room 203'),
+('Dr. B.', 'Murthy', 'bmurthy@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Political Science', 'Associate Professor', '0000-0001-1234-5679', 'Associate Professor of Political Science with research focus on governance structures and public policy implementation.', NULL, 'Political Science Department, Room 304'),
+('Dr. L.', 'Srinivas', 'lsrinivas@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Commerce', 'Professor', '0000-0001-2345-6780', 'Professor of Commerce with expertise in business development and financial management, particularly for rural and coastal enterprises.', NULL, 'Commerce Department, Room 401'),
+('Dr. T.', 'Vijaya', 'tvijaya@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Computer Science', 'Assistant Professor', '0000-0001-3456-7891', 'Assistant Professor of Computer Science specializing in educational technology and digital transformation initiatives.', NULL, 'Computer Lab, Block C'),
+('Dr. K.', 'Madhavi', 'kmadhavi@svlnsgdc.ac.in', 'Sri Varaha Lakshmi Narsimha Swami Government Degree College', 'Library Science', 'Librarian', '0000-0001-4567-8902', 'Librarian and information specialist with expertise in research methodology and digital library management.', NULL, 'Central Library');
 
 -- Insert Editorial Board Members (Consistent with Authors)
 INSERT INTO editorial_board (first_name, last_name, email, position, affiliation, expertise_areas, bio, order_position, is_active) VALUES
@@ -175,4 +175,27 @@ INSERT INTO articles (
     6100, 16,
     'https://github.com/svlns-journal/articles/blob/main/vol1-issue1/higher-education-impact.md',
     'https://github.com/svlns-journal/articles/blob/main/vol1-issue1/higher-education-impact.pdf'
+);
+
+-- Insert some sample submissions
+INSERT INTO submissions (title, authors, email, institution, abstract, keywords, year, status) VALUES
+(
+    'Impact of Climate Change on Coastal Fisheries in Andhra Pradesh',
+    'Dr. Marine Biologist, Dr. Climate Researcher',
+    'marine.bio@example.com',
+    'Marine Research Institute, Visakhapatnam',
+    'This study analyzes the impact of climate change on coastal fisheries in Andhra Pradesh over the past two decades. Using statistical analysis of catch data and environmental parameters, we identify significant correlations between temperature rise, sea level changes, and fish population dynamics.',
+    'climate change, fisheries, coastal ecology, Andhra Pradesh, marine biology',
+    2024,
+    'under_review'
+),
+(
+    'Digital Transformation in Rural Education: A Case Study',
+    'Dr. Education Technology, Prof. Rural Development',
+    'edu.tech@example.com',
+    'Educational Research Center, Hyderabad',
+    'This research examines the implementation and impact of digital technologies in rural educational institutions. Through a comprehensive case study approach, we analyze the challenges and opportunities in bridging the digital divide in rural areas.',
+    'digital education, rural development, technology integration, educational policy',
+    2024,
+    'submitted'
 );
