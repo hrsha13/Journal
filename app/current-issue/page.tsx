@@ -218,13 +218,14 @@ export default function CurrentIssuePage() {
                       ))}
                     </div>
                     <div className="flex space-x-2">
-                      <Button
-  size="sm"
-  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
->
-  <Eye className="h-4 w-4 mr-2" />
-  Read Full Text
-</Button>
+                     <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Read Full Text
+                      </Button>
+
 
                       {article.manuscript_file_url && (
                         <Button
