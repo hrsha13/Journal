@@ -22,6 +22,11 @@ export default function AboutPage() {
             Fostering excellence in multidisciplinary research and academic publishing
           </p>
         </div>
+<section className="mt-6">
+  <h2 className="text-xl font-bold">Journal Details</h2>
+  <p><strong>Starting Year:</strong> 2024</p>
+  <p><strong>Format:</strong> Online</p>
+</section>
 
         {/* Journal Overview */}
         <Card className="mb-8">
