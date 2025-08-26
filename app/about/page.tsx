@@ -208,7 +208,7 @@ export default function AboutPage() {
                     <strong>Frequency:</strong> Quarterly
                   </li>
                   <li>
-                    <strong>Language:</strong> English (Primary), Hindi, Telugu
+                    <strong>Language:</strong> English.
                   </li>
                   <li>
                     <strong>Publisher:</strong> Sri Varaha Lakshmi Narsimha Swami Government Degree College
@@ -256,13 +256,13 @@ export default function AboutPage() {
                 <h4 className="font-semibold mb-3">Contact Details</h4>
                 <ul className="space-y-2 text-sm">
                   <li>
-                    <strong>Editor-in-Chief:</strong> Dr. [Name]
+                    <strong>Editor-in-Chief:</strong> Dr. P.Surekha, Principal
                   </li>
                   <li>
                     <strong>Email:</strong> svlns.gdc@gmail.com
                   </li>
                   <li>
-                    <strong>Phone:</strong> +91-XXX-XXX-XXXX
+                    <strong>Phone:</strong> +91-8247685902
                   </li>
                   <li>
                     <strong>Website:</strong> Under Development
