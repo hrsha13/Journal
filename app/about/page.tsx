@@ -22,11 +22,7 @@ export default function AboutPage() {
             Fostering excellence in multidisciplinary research and academic publishing
           </p>
         </div>
-<section className="mt-6">
-  <h2 className="text-xl font-bold">Journal Details</h2>
-  <p><strong>Starting Year:</strong> 2024</p>
-  <p><strong>Format:</strong> Online</p>
-</section>
+
 
         {/* Journal Overview */}
         <Card className="mb-8">
@@ -37,6 +33,11 @@ export default function AboutPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <section className="mt-6">
+  <h2 className="text-xl font-bold">Journal Details</h2>
+  <p><strong>Starting Year:</strong> 2024</p>
+  <p><strong>Format:</strong> Online</p>
+</section>
             <p>
               The SVLNS GDC Multidisciplinary Journal is a peer-reviewed, open-access academic publication dedicated to
               advancing knowledge across diverse fields of study. Established with the vision of promoting
