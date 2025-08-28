@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Download, Eye, Calendar, BookOpen, Sparkles } from "lucide-react"
+import { Search, Download, Eye, Calendar, BookOpen, Sparkles, FileText } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import type { Issue, Article } from "@/lib/supabase"
 
@@ -21,6 +21,7 @@ export default function ArchivesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedYear, setSelectedYear] = useState("all")
   const [selectedSubject, setSelectedSubject] = useState("all")
+  const [downloading, setDownloading] = useState<string | null>(null)
 
   useEffect(() => {
     fetchArchiveData()
@@ -95,10 +96,12 @@ export default function ArchivesPage() {
 
   const handleDownloadPDF = async (articleId: string, title: string) => {
     try {
+      setDownloading(articleId)
+      
       // Get the PDF URL from the database
       const { data, error } = await supabase
         .from("articles")
-        .select("github_pdf_url, manuscript_file_url")
+        .select("github_pdf_url, manuscript_file_url, primary_pdf_location, title")
         .eq("id", articleId)
         .single()
 
@@ -108,57 +111,101 @@ export default function ArchivesPage() {
         return
       }
 
-      // Use the PDF URL (prioritize github_pdf_url, fallback to manuscript_file_url)
-      const pdfUrl = data.github_pdf_url || data.manuscript_file_url
+      // Try different possible PDF URL fields
+      const pdfUrl = data.github_pdf_url || data.manuscript_file_url || 
+                    (data.primary_pdf_location && data.primary_pdf_location.url);
       
       if (!pdfUrl) {
         alert("PDF is not available for this article.")
         return
       }
 
-      // Open the PDF in a new tab
-      window.open(pdfUrl, "_blank")
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a')
+      link.href = pdfUrl
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } catch (error) {
       console.error("Error downloading PDF:", error)
       alert("Failed to download the PDF. Please try again later.")
+    } finally {
+      setDownloading(null)
     }
   }
 
   const handleReadArticle = (articleId: string) => {
-    // Navigate to the article page
-    router.push(`/articles/${articleId}`)
+    // For now, let's open the PDF in a new tab since we don't have article pages
+    const article = articles.find(a => a.id === articleId)
+    if (article) {
+      const pdfUrl = article.github_pdf_url || article.manuscript_file_url || 
+                    (article.primary_pdf_location && article.primary_pdf_location.url);
+      
+      if (pdfUrl) {
+        window.open(pdfUrl, '_blank')
+      } else {
+        alert("Full text is not available for this article.")
+      }
+    }
   }
 
   const handleViewIssue = (issueId: string) => {
-    // Navigate to the issue page
-    router.push(`/issues/${issueId}`)
+    // For now, let's show a modal with issue details since we don't have issue pages
+    const issue = issues.find(i => i.id === issueId)
+    if (issue) {
+      alert(`Issue: Volume ${issue.volume}, Issue ${issue.issue_number} (${issue.year})\n\n${issue.description || 'No description available.'}`)
+    }
   }
 
   const handleDownloadIssue = async (issueId: string, title: string) => {
     try {
-      // Get the issue PDF URL from the database
-      const { data, error } = await supabase
+      setDownloading(`issue-${issueId}`)
+      
+      // Get the issue to find its articles
+      const { data: issueData, error: issueError } = await supabase
         .from("issues")
-        .select("pdf_url")
+        .select(`
+          *,
+          articles (*)
+        `)
         .eq("id", issueId)
         .single()
 
-      if (error) {
-        console.error("Error fetching issue PDF URL:", error)
-        alert("Failed to retrieve the issue PDF. Please try again later.")
+      if (issueError) {
+        console.error("Error fetching issue:", issueError)
+        alert("Failed to retrieve the issue. Please try again later.")
         return
       }
 
-      if (!data.pdf_url) {
-        alert("PDF is not available for this issue.")
+      if (!issueData.articles || issueData.articles.length === 0) {
+        alert("No articles available for this issue.")
         return
       }
 
-      // Open the PDF in a new tab
-      window.open(data.pdf_url, "_blank")
+      // For now, let's just download the first article as a demo
+      // In a real implementation, you might want to create a zip of all articles
+      const firstArticle = issueData.articles[0]
+      const pdfUrl = firstArticle.github_pdf_url || firstArticle.manuscript_file_url || 
+                    (firstArticle.primary_pdf_location && firstArticle.primary_pdf_location.url);
+      
+      if (!pdfUrl) {
+        alert("No PDF available for this issue.")
+        return
+      }
+
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a')
+      link.href = pdfUrl
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}_sample_article.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } catch (error) {
-      console.error("Error downloading issue PDF:", error)
-      alert("Failed to download the issue PDF. Please try again later.")
+      console.error("Error downloading issue:", error)
+      alert("Failed to download the issue. Please try again later.")
+    } finally {
+      setDownloading(null)
     }
   }
 
@@ -321,9 +368,19 @@ export default function ArchivesPage() {
                             variant="outline"
                             className="border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
                             onClick={() => handleDownloadIssue(issue.id, issue.title)}
+                            disabled={downloading === `issue-${issue.id}`}
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
+                            {downloading === `issue-${issue.id}` ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download PDF
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -369,7 +426,7 @@ export default function ArchivesPage() {
                   <CardContent className="p-6">
                     <p className="text-sm text-gray-700 mb-4 line-clamp-3">{article.abstract}</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {article.keywords.map((keyword, idx) => (
+                      {article.keywords && article.keywords.map((keyword, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
                           {keyword}
                         </Badge>
@@ -381,7 +438,7 @@ export default function ArchivesPage() {
                         className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                         onClick={() => handleReadArticle(article.id)}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
+                        <FileText className="h-4 w-4 mr-2" />
                         Read Full Text
                       </Button>
                       <Button
@@ -389,9 +446,19 @@ export default function ArchivesPage() {
                         variant="outline"
                         className="border-purple-500 text-purple-600 hover:bg-purple-50 bg-transparent"
                         onClick={() => handleDownloadPDF(article.id, article.title)}
+                        disabled={downloading === article.id}
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download PDF
+                        {downloading === article.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -421,7 +488,7 @@ export default function ArchivesPage() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {issues.reduce((sum, issue) => sum + issue.article_count, 0)}
+                  {issues.reduce((sum, issue) => sum + (issue.article_count || 0), 0)}
                 </div>
                 <div className="text-sm text-gray-600">Total Pages</div>
               </div>
