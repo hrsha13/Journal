@@ -37,9 +37,10 @@ export default function AboutPage() {
   <h2 className="text-xl font-bold">Journal Details</h2>
   <p><strong>Starting Year:</strong> 2024</p>
   <p><strong>Format:</strong> Online</p>
+ <p><strong>Scope:</strong> International</p>
 </section>
             <p>
-              The SVLNS GDC Multidisciplinary Journal is a peer-reviewed, open-access academic publication dedicated to
+              The SVLNS GDC Multidisciplinary Journal is an international, peer-reviewed, open-access academic publication dedicated to
               advancing knowledge across diverse fields of study. Established with the vision of promoting
               interdisciplinary research, our journal serves as a platform for scholars, researchers, and academicians
               to share their innovative findings and contribute to the global body of knowledge.
