@@ -97,20 +97,22 @@ export default function ArchivesPage() {
  const handleDownloadIssue = async (issueId: string, title: string) => {
   try {
     setDownloading(`issue-${issueId}`)
-    
+    console.log("Attempting to download issue:", issueId, title)
     // Get the issue with its PDF URL
     const { data: issueData, error: issueError } = await supabase
       .from("issues")
       .select("pdf_url, cover_image_url, volume, issue_number")
       .eq("id", issueId)
       .single()
+     console.log("Issue data:", issueData)
+    console.log("Issue error:", issueError)
 
     if (issueError) {
       console.error("Error fetching issue:", issueError)
       alert("Failed to retrieve the issue. Please try again later.")
       return
     }
-
+  
     // Try the PDF URL first
     if (issueData.pdf_url) {
       const link = document.createElement('a')
@@ -121,7 +123,7 @@ export default function ArchivesPage() {
       document.body.removeChild(link)
       return
     }
-
+    console.log("Cover image URL:", issueData.cover_image_url)
     // Fallback to cover image if it's a PDF
     if (issueData.cover_image_url && issueData.cover_image_url.endsWith('.pdf')) {
       const link = document.createElement('a')
