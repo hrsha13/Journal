@@ -285,7 +285,34 @@ ${formData.authorAffiliation}
                 <strong>Submission Email:</strong> svlns.gdc@gmail.com
                 <br />
                 This form will save your submission to our database and prepare your submission email with all required
-                information including your manuscript URL.
+                information including your manuscript URL.// Add these lines to your existing TSX file, preferably in the component's return statement
+
+<div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+  <h3>Format Templates</h3>
+  <p>Download the required templates for submission:</p>
+  <ul style={{ listStyleType: 'none', padding: 0 }}>
+    <li style={{ marginBottom: '8px' }}>
+      <a 
+        href="https://docs.google.com/document/d/1G7v02E1dOVs9KNyRPccWVLhBGbxTOxCz/edit?usp=drive_link&ouid=101168667610217696089&rtpof=true&sd=true" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{ color: '#1976d2', textDecoration: 'none' }}
+      >
+        📝 LaTeX Template Document
+      </a>
+    </li>
+    <li>
+      <a 
+        href="https://drive.google.com/file/d/1sbLKcdJbK5-bt0m57GXyk0WWgc3pRYov/view?usp=drive_link" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{ color: '#1976d2', textDecoration: 'none' }}
+      >
+        📄 Word Template Document
+      </a>
+    </li>
+  </ul>
+</div>
               </AlertDescription>
             </Alert>
           </CardContent>
