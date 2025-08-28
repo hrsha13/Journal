@@ -98,10 +98,10 @@ export default function ArchivesPage() {
   try {
     setDownloading(`issue-${issueId}`)
     
-    // Get the issue details
+    // Get the issue with its PDF URL
     const { data: issueData, error: issueError } = await supabase
       .from("issues")
-      .select("cover_image_url, volume, issue_number")
+      .select("pdf_url, cover_image_url, volume, issue_number")
       .eq("id", issueId)
       .single()
 
@@ -111,16 +111,10 @@ export default function ArchivesPage() {
       return
     }
 
-    // Check if the cover_image_url is a PDF file
-    if (issueData.cover_image_url && 
-        (issueData.cover_image_url.endsWith('.pdf') || 
-         issueData.cover_image_url.includes('github.com/user-attachments/files/'))) {
-      // Use the cover_image_url as the PDF URL
-      const pdfUrl = issueData.cover_image_url
-      
-      // Create a temporary anchor element to trigger download
+    // Try the PDF URL first
+    if (issueData.pdf_url) {
       const link = document.createElement('a')
-      link.href = pdfUrl
+      link.href = issueData.pdf_url
       link.setAttribute('download', `${title.replace(/\s+/g, '_')}.pdf`)
       document.body.appendChild(link)
       link.click()
@@ -128,7 +122,18 @@ export default function ArchivesPage() {
       return
     }
 
-    // If no PDF in cover_image_url, try to get the first article in the issue
+    // Fallback to cover image if it's a PDF
+    if (issueData.cover_image_url && issueData.cover_image_url.endsWith('.pdf')) {
+      const link = document.createElement('a')
+      link.href = issueData.cover_image_url
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    // Final fallback: try to get the first article in the issue
     const { data: articlesData, error: articlesError } = await supabase
       .from("articles")
       .select("github_pdf_url, manuscript_file_url")
@@ -163,7 +168,7 @@ export default function ArchivesPage() {
   } finally {
     setDownloading(null)
   }
-}  
+}
    const handleReadArticle = (articleId: string) => {
     // For now, let's open the PDF in a new tab since we don't have article pages
     const article = articles.find(a => a.id === articleId)
