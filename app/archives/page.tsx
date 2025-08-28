@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import { supabase } from "@/lib/supabase"
 import type { Issue, Article } from "@/lib/supabase"
 
 export default function ArchivesPage() {
+  const router = useRouter()
   const [issues, setIssues] = useState<Issue[]>([])
   const [articles, setArticles] = useState<Article[]>([])
   const [filteredIssues, setFilteredIssues] = useState<Issue[]>([])
@@ -88,6 +90,75 @@ export default function ArchivesPage() {
       setError("An unexpected error occurred.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDownloadPDF = async (articleId: string, title: string) => {
+    try {
+      // Get the PDF URL from the database
+      const { data, error } = await supabase
+        .from("articles")
+        .select("github_pdf_url, manuscript_file_url")
+        .eq("id", articleId)
+        .single()
+
+      if (error) {
+        console.error("Error fetching PDF URL:", error)
+        alert("Failed to retrieve the PDF. Please try again later.")
+        return
+      }
+
+      // Use the PDF URL (prioritize github_pdf_url, fallback to manuscript_file_url)
+      const pdfUrl = data.github_pdf_url || data.manuscript_file_url
+      
+      if (!pdfUrl) {
+        alert("PDF is not available for this article.")
+        return
+      }
+
+      // Open the PDF in a new tab
+      window.open(pdfUrl, "_blank")
+    } catch (error) {
+      console.error("Error downloading PDF:", error)
+      alert("Failed to download the PDF. Please try again later.")
+    }
+  }
+
+  const handleReadArticle = (articleId: string) => {
+    // Navigate to the article page
+    router.push(`/articles/${articleId}`)
+  }
+
+  const handleViewIssue = (issueId: string) => {
+    // Navigate to the issue page
+    router.push(`/issues/${issueId}`)
+  }
+
+  const handleDownloadIssue = async (issueId: string, title: string) => {
+    try {
+      // Get the issue PDF URL from the database
+      const { data, error } = await supabase
+        .from("issues")
+        .select("pdf_url")
+        .eq("id", issueId)
+        .single()
+
+      if (error) {
+        console.error("Error fetching issue PDF URL:", error)
+        alert("Failed to retrieve the issue PDF. Please try again later.")
+        return
+      }
+
+      if (!data.pdf_url) {
+        alert("PDF is not available for this issue.")
+        return
+      }
+
+      // Open the PDF in a new tab
+      window.open(data.pdf_url, "_blank")
+    } catch (error) {
+      console.error("Error downloading issue PDF:", error)
+      alert("Failed to download the issue PDF. Please try again later.")
     }
   }
 
@@ -240,6 +311,7 @@ export default function ArchivesPage() {
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
+                            onClick={() => handleViewIssue(issue.id)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Issue
@@ -248,6 +320,7 @@ export default function ArchivesPage() {
                             size="sm"
                             variant="outline"
                             className="border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
+                            onClick={() => handleDownloadIssue(issue.id, issue.title)}
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download PDF
@@ -306,6 +379,7 @@ export default function ArchivesPage() {
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                        onClick={() => handleReadArticle(article.id)}
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Read Full Text
@@ -314,6 +388,7 @@ export default function ArchivesPage() {
                         size="sm"
                         variant="outline"
                         className="border-purple-500 text-purple-600 hover:bg-purple-50 bg-transparent"
+                        onClick={() => handleDownloadPDF(article.id, article.title)}
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download PDF
