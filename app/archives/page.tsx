@@ -101,7 +101,7 @@ export default function ArchivesPage() {
       // Get the PDF URL from the database
       const { data, error } = await supabase
         .from("articles")
-        .select("github_pdf_url, manuscript_file_url, primary_pdf_location, title")
+        .select("github_pdf_url, manuscript_file_url, title")
         .eq("id", articleId)
         .single()
 
@@ -112,8 +112,7 @@ export default function ArchivesPage() {
       }
 
       // Try different possible PDF URL fields
-      const pdfUrl = data.github_pdf_url || data.manuscript_file_url || 
-                    (data.primary_pdf_location && data.primary_pdf_location.url);
+      const pdfUrl = data.github_pdf_url || data.manuscript_file_url
       
       if (!pdfUrl) {
         alert("PDF is not available for this article.")
@@ -139,8 +138,7 @@ export default function ArchivesPage() {
     // For now, let's open the PDF in a new tab since we don't have article pages
     const article = articles.find(a => a.id === articleId)
     if (article) {
-      const pdfUrl = article.github_pdf_url || article.manuscript_file_url || 
-                    (article.primary_pdf_location && article.primary_pdf_location.url);
+      const pdfUrl = article.github_pdf_url || article.manuscript_file_url
       
       if (pdfUrl) {
         window.open(pdfUrl, '_blank')
@@ -162,34 +160,83 @@ export default function ArchivesPage() {
     try {
       setDownloading(`issue-${issueId}`)
       
-      // Get the issue to find its articles
+      // Get the issue with its PDF URL
       const { data: issueData, error: issueError } = await supabase
         .from("issues")
-        .select(`
-          *,
-          articles (*)
-        `)
+        .select("pdf_url, cover_image_url, title, volume, issue_number")
         .eq("id", issueId)
         .single()
 
       if (issueError) {
         console.error("Error fetching issue:", issueError)
+        
+        // Fallback: try to get articles for this issue
+        const issue = issues.find(i => i.id === issueId)
+        if (issue) {
+          const { data: articlesData, error: articlesError } = await supabase
+            .from("articles")
+            .select("github_pdf_url, manuscript_file_url")
+            .eq("volume", issue.volume)
+            .eq("issue", issue.issue_number)
+            .eq("status", "published")
+            .limit(1)
+
+          if (articlesError) {
+            console.error("Error fetching articles:", articlesError)
+            alert("Failed to retrieve the issue. Please try again later.")
+            return
+          }
+
+          if (articlesData && articlesData.length > 0) {
+            const pdfUrl = articlesData[0].github_pdf_url || articlesData[0].manuscript_file_url
+            if (pdfUrl) {
+              const link = document.createElement('a')
+              link.href = pdfUrl
+              link.setAttribute('download', `${title.replace(/\s+/g, '_')}_sample.pdf`)
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              return
+            }
+          }
+        }
+        
         alert("Failed to retrieve the issue. Please try again later.")
         return
       }
 
-      if (!issueData.articles || issueData.articles.length === 0) {
-        alert("No articles available for this issue.")
-        return
-      }
-
-      // For now, let's just download the first article as a demo
-      // In a real implementation, you might want to create a zip of all articles
-      const firstArticle = issueData.articles[0]
-      const pdfUrl = firstArticle.github_pdf_url || firstArticle.manuscript_file_url || 
-                    (firstArticle.primary_pdf_location && firstArticle.primary_pdf_location.url);
+      // Try different possible PDF URL fields
+      const pdfUrl = issueData.pdf_url || issueData.cover_image_url
       
       if (!pdfUrl) {
+        // If no issue PDF, try to get the first article in the issue
+        const { data: articlesData, error: articlesError } = await supabase
+          .from("articles")
+          .select("github_pdf_url, manuscript_file_url")
+          .eq("volume", issueData.volume)
+          .eq("issue", issueData.issue_number)
+          .eq("status", "published")
+          .limit(1)
+
+        if (articlesError) {
+          console.error("Error fetching articles:", articlesError)
+          alert("No PDF available for this issue.")
+          return
+        }
+
+        if (articlesData && articlesData.length > 0) {
+          const articlePdfUrl = articlesData[0].github_pdf_url || articlesData[0].manuscript_file_url
+          if (articlePdfUrl) {
+            const link = document.createElement('a')
+            link.href = articlePdfUrl
+            link.setAttribute('download', `${title.replace(/\s+/g, '_')}_sample.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            return
+          }
+        }
+        
         alert("No PDF available for this issue.")
         return
       }
@@ -197,7 +244,7 @@ export default function ArchivesPage() {
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a')
       link.href = pdfUrl
-      link.setAttribute('download', `${title.replace(/\s+/g, '_')}_sample_article.pdf`)
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}.pdf`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
