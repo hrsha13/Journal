@@ -285,9 +285,8 @@ ${formData.authorAffiliation}
                 <strong>Submission Email:</strong> svlns.gdc@gmail.com
                 <br />
                 This form will save your submission to our database and prepare your submission email with all required
-                information including your manuscript URL.// Add these lines to your existing TSX file, preferably in the component's return statement
-
-<div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                information including your manuscript URL.
+                <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
   <h3>Format Templates</h3>
   <p>Download the required templates for submission:</p>
   <ul style={{ listStyleType: 'none', padding: 0 }}>
