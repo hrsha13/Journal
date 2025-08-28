@@ -94,31 +94,30 @@ export default function ArchivesPage() {
     }
   }
 
-  const handleDownloadPDF = async (articleId: string, title: string) => {
-    try {
-      setDownloading(articleId)
+ const handleDownloadIssue = async (issueId: string, title: string) => {
+  try {
+    setDownloading(`issue-${issueId}`)
+    
+    // Get the issue details
+    const { data: issueData, error: issueError } = await supabase
+      .from("issues")
+      .select("cover_image_url, volume, issue_number")
+      .eq("id", issueId)
+      .single()
+
+    if (issueError) {
+      console.error("Error fetching issue:", issueError)
+      alert("Failed to retrieve the issue. Please try again later.")
+      return
+    }
+
+    // Check if the cover_image_url is a PDF file
+    if (issueData.cover_image_url && 
+        (issueData.cover_image_url.endsWith('.pdf') || 
+         issueData.cover_image_url.includes('github.com/user-attachments/files/'))) {
+      // Use the cover_image_url as the PDF URL
+      const pdfUrl = issueData.cover_image_url
       
-      // Get the PDF URL from the database
-      const { data, error } = await supabase
-        .from("articles")
-        .select("github_pdf_url, manuscript_file_url, title")
-        .eq("id", articleId)
-        .single()
-
-      if (error) {
-        console.error("Error fetching PDF URL:", error)
-        alert("Failed to retrieve the PDF. Please try again later.")
-        return
-      }
-
-      // Try different possible PDF URL fields
-      const pdfUrl = data.github_pdf_url || data.manuscript_file_url
-      
-      if (!pdfUrl) {
-        alert("PDF is not available for this article.")
-        return
-      }
-
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a')
       link.href = pdfUrl
@@ -126,15 +125,46 @@ export default function ArchivesPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-    } catch (error) {
-      console.error("Error downloading PDF:", error)
-      alert("Failed to download the PDF. Please try again later.")
-    } finally {
-      setDownloading(null)
+      return
     }
-  }
 
-  const handleReadArticle = (articleId: string) => {
+    // If no PDF in cover_image_url, try to get the first article in the issue
+    const { data: articlesData, error: articlesError } = await supabase
+      .from("articles")
+      .select("github_pdf_url, manuscript_file_url")
+      .eq("volume", issueData.volume)
+      .eq("issue", issueData.issue_number)
+      .eq("status", "published")
+      .limit(1)
+
+    if (articlesError) {
+      console.error("Error fetching articles:", articlesError)
+      alert("No PDF available for this issue.")
+      return
+    }
+
+    if (articlesData && articlesData.length > 0) {
+      const pdfUrl = articlesData[0].github_pdf_url || articlesData[0].manuscript_file_url
+      if (pdfUrl) {
+        const link = document.createElement('a')
+        link.href = pdfUrl
+        link.setAttribute('download', `${title.replace(/\s+/g, '_')}_sample_article.pdf`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        return
+      }
+    }
+    
+    alert("No PDF available for this issue.")
+  } catch (error) {
+    console.error("Error downloading issue:", error)
+    alert("Failed to download the issue. Please try again later.")
+  } finally {
+    setDownloading(null)
+  }
+}  
+   const handleReadArticle = (articleId: string) => {
     // For now, let's open the PDF in a new tab since we don't have article pages
     const article = articles.find(a => a.id === articleId)
     if (article) {
