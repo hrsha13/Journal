@@ -108,7 +108,7 @@ export function Footer() {
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p>
-              &copy; 2024 Sri Varaha Lakshmi Narsimha Swami Government Degree College, Bheemunipatnam. All rights
+              &copy; 2025 SVLNS  Multidisciplinary Journal . All rights
               reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
