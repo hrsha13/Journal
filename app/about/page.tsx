@@ -51,8 +51,8 @@ export default function AboutPage() {
               publishing practices.
             </p>
             <p>
-              Published by Sri Varaha Lakshmi Narsimha Swami Government Degree College, Bheemunipatnam, this journal
-              represents the institution's commitment to research excellence and academic innovation. The college,
+              Published by SVLNS GDC Multidisciplinary Journal, this journal
+              represents the Sri Varaha Lakshmi Narsimha Swami Government Degree College, Bheemunipatnam institution's commitment to research excellence and academic innovation. The college,
               established in 1984 and accredited by NAAC Bengalore, has been serving the educational needs of students
               from socially challenged sections of society for over 30 years, providing the strong academic foundation
               for this multidisciplinary publication.
