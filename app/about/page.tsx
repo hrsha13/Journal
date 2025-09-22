@@ -35,7 +35,7 @@ export default function AboutPage() {
           <CardContent className="space-y-4">
             <section className="mt-6">
   <h2 className="text-xl font-bold">Journal Details</h2>
-  <p><strong>Starting Year:</strong> 2024</p>
+  <p><strong>Starting Year:</strong> 2025</p>
   <p><strong>Format:</strong> Online</p>
  <p><strong>Scope:</strong> International</p>
 </section>
