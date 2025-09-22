@@ -11,12 +11,12 @@ export function Footer() {
               <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full p-2">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
-              <span className="font-bold text-lg">SVLNS GDC Journal</span>
+              <span className="font-bold text-lg">SVLNS GDC Multidisciplinary Journal </span>
             </div>
             <p className="text-gray-300 text-sm">
               Advancing multidisciplinary research through rigorous peer review and open access publishing.
             </p>
-            <p className="text-gray-400 text-xs mt-2">Established 1984 • NAAC Accredited • Journal Launch 2024</p>
+            <p className="text-gray-400 text-xs mt-2">Established 1984 • NAAC Accredited • Journal Launch 2025</p>
           </div>
 
           <div>
@@ -108,7 +108,7 @@ export function Footer() {
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p>
-              &copy; 2025 SVLNS  Multidisciplinary Journal . All rights
+              &copy; 2025 SVLNS GDC Multidisciplinary Journal . All rights
               reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
