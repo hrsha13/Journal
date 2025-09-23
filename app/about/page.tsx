@@ -10,7 +10,7 @@ export default function AboutPage() {
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <Image
-              src="/images/college-logo.jpg"
+              src="/images/college-logo.png"
               alt="Sri Varaha Lakshmi Narsimha Swami Government Degree College Logo"
               width={100}
               height={100}
@@ -23,6 +23,7 @@ export default function AboutPage() {
           </p>
         </div>
 
+
         {/* Journal Overview */}
         <Card className="mb-8">
           <CardHeader>
@@ -33,22 +34,16 @@ export default function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <section className="mt-6">
-              <h2 className="text-xl font-bold">Journal Details</h2>
-              <p>
-                <strong>Starting Year:</strong> 2025
-              </p>
-              <p>
-                <strong>Format:</strong> Online
-              </p>
-              <p>
-                <strong>Scope:</strong> International
-              </p>
-            </section>
+  <h2 className="text-xl font-bold">Journal Details</h2>
+  <p><strong>Starting Year:</strong> 2025</p>
+  <p><strong>Format:</strong> Online</p>
+ <p><strong>Scope:</strong> International</p>
+</section>
             <p>
-              The SVLNS GDC Multidisciplinary Journal is an international, peer-reviewed, open-access academic
-              publication dedicated to advancing knowledge across diverse fields of study. Established with the vision
-              of promoting interdisciplinary research, our journal serves as a platform for scholars, researchers, and
-              academicians to share their innovative findings and contribute to the global body of knowledge.
+              The SVLNS GDC Multidisciplinary Journal is an international, peer-reviewed, open-access academic publication dedicated to
+              advancing knowledge across diverse fields of study. Established with the vision of promoting
+              interdisciplinary research, our journal serves as a platform for scholars, researchers, and academicians
+              to share their innovative findings and contribute to the global body of knowledge.
             </p>
             <p>
               Our journal adheres to the highest standards of academic integrity and follows the University Grants
@@ -56,11 +51,11 @@ export default function AboutPage() {
               publishing practices.
             </p>
             <p>
-              Published by SVLNS GDC Multidisciplinary Journal, this journal represents the Sri Varaha Lakshmi Narsimha
-              Swami Government Degree College, Bheemunipatnam institution's commitment to research excellence and
-              academic innovation. The college, established in 1984 and accredited by NAAC Bengalore, has been serving
-              the educational needs of students from socially challenged sections of society for over 30 years,
-              providing the strong academic foundation for this multidisciplinary publication.
+              Published by SVLNS GDC Multidisciplinary Journal, this journal
+              represents the Sri Varaha Lakshmi Narsimha Swami Government Degree College, Bheemunipatnam institution's commitment to research excellence and academic innovation. The college,
+              established in 1984 and accredited by NAAC Bengalore, has been serving the educational needs of students
+              from socially challenged sections of society for over 30 years, providing the strong academic foundation
+              for this multidisciplinary publication.
             </p>
           </CardContent>
         </Card>
