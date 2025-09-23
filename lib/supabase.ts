@@ -108,6 +108,7 @@ export interface EditorialBoardMember {
   expertise_areas: string[]
   bio?: string
   profile_image_url?: string
+  profile_url?: string
   order_position: number
   is_active: boolean
   created_at: string

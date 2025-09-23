@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Mail, User, Phone } from "lucide-react"
+import { Mail, User, Phone, ExternalLink } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import type { EditorialBoardMember } from "@/lib/supabase"
 
@@ -116,11 +116,30 @@ export default function EditorialBoardPage() {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600 justify-center md:justify-start">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          <a href={`mailto:${editorInChief.email}`} className="hover:text-blue-600">
-                            {editorInChief.email}
-                          </a>
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            <a href={`mailto:${editorInChief.email}`} className="hover:text-blue-600">
+                              {editorInChief.email}
+                            </a>
+                          </span>
+                          {editorInChief.profile_url && (
+                            <>
+                              <span className="text-gray-300" aria-hidden="true">
+                                •
+                              </span>
+                              <a
+                                href={editorInChief.profile_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 hover:text-blue-600"
+                                aria-label="View profile"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                <span>Profile</span>
+                              </a>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -168,11 +187,30 @@ export default function EditorialBoardPage() {
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <Mail className="h-3 w-3" />
-                      <a href={`mailto:${member.email}`} className="hover:text-green-600 truncate">
-                        {member.email}
-                      </a>
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <span className="inline-flex items-center gap-2 min-w-0">
+                        <Mail className="h-3 w-3" />
+                        <a href={`mailto:${member.email}`} className="hover:text-green-600 truncate">
+                          {member.email}
+                        </a>
+                      </span>
+                      {member.profile_url && (
+                        <>
+                          <span className="text-gray-300" aria-hidden="true">
+                            •
+                          </span>
+                          <a
+                            href={member.profile_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 hover:text-green-700"
+                            aria-label="View profile"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>Profile</span>
+                          </a>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -210,11 +248,30 @@ export default function EditorialBoardPage() {
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm text-gray-600 justify-center md:justify-start">
-                        <Mail className="h-4 w-4" />
-                        <a href={`mailto:${managingEditor.email}`} className="hover:text-purple-600">
-                          {managingEditor.email}
-                        </a>
+                      <div className="flex items-center gap-3 text-sm text-gray-600 justify-center md:justify-start">
+                        <span className="inline-flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          <a href={`mailto:${managingEditor.email}`} className="hover:text-purple-600">
+                            {managingEditor.email}
+                          </a>
+                        </span>
+                        {managingEditor.profile_url && (
+                          <>
+                            <span className="text-gray-300" aria-hidden="true">
+                              •
+                            </span>
+                            <a
+                              href={managingEditor.profile_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 hover:text-purple-600"
+                              aria-label="View profile"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span>Profile</span>
+                            </a>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
