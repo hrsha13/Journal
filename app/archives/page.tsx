@@ -52,11 +52,11 @@ export default function ArchivesPage() {
       setLoading(true)
       setError(null)
 
-      // Fetch all published issues
+      // Fetch all published issues and those with NULL status
       const { data: issuesData, error: issuesError } = await supabase
         .from("issues")
         .select("*")
-        .eq("status", "published")
+        .or("status.eq.published,status.is.null")
         .order("year", { ascending: false })
         .order("volume", { ascending: false })
         .order("issue_number", { ascending: false })
@@ -70,14 +70,14 @@ export default function ArchivesPage() {
       setIssues(issuesData || [])
       setFilteredIssues(issuesData || [])
 
-      // Fetch all published articles
+      // Fetch all published articles and those with NULL status
       const { data: articlesData, error: articlesError } = await supabase
         .from("articles")
         .select(`
           *,
           primary_author:authors(first_name,last_name,affiliation)
         `)
-        .eq("status", "published")
+        .or("status.eq.published,status.is.null")
         .order("publication_date", { ascending: false })
 
       if (articlesError) {
@@ -97,15 +97,15 @@ export default function ArchivesPage() {
   const handleDownloadIssue = async (issueId: string, title: string) => {
     try {
       setDownloading(`issue-${issueId}`)
-      console.log("Attempting to download issue:", issueId, title)
-      // Get the issue with its PDF URL
+      console.log("[v0] handleDownloadIssue start:", { issueId, title })
+
       const { data: issueData, error: issueError } = await supabase
         .from("issues")
-        .select("pdf_url, cover_image_url, volume, issue_number")
+        .select("cover_image_url, volume, issue_number")
         .eq("id", issueId)
         .single()
-      console.log("Issue data:", issueData)
-      console.log("Issue error:", issueError)
+
+      console.log("[v0] handleDownloadIssue issueData:", issueData, "issueError:", issueError)
 
       if (issueError) {
         console.error("Error fetching issue:", issueError)
@@ -113,19 +113,35 @@ export default function ArchivesPage() {
         return
       }
 
-      // Try the PDF URL first
-      if (issueData.pdf_url) {
-        const link = document.createElement("a")
-        link.href = issueData.pdf_url
-        link.setAttribute("download", `${title.replace(/\s+/g, "_")}.pdf`)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        return
+      const { data: issuePdfLinks, error: linksError } = await supabase
+        .from("github_links")
+        .select("github_url, is_primary, file_type")
+        .eq("entity_type", "issue")
+        .eq("entity_id", issueId)
+        .eq("file_type", "pdf")
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+
+      console.log("[v0] handleDownloadIssue links:", issuePdfLinks, "linksError:", linksError)
+
+      if (!linksError && issuePdfLinks && issuePdfLinks.length > 0) {
+        const pdfUrl = issuePdfLinks[0].github_url
+        if (pdfUrl) {
+          const link = document.createElement("a")
+          link.href = pdfUrl
+          link.setAttribute("download", `${title.replace(/\s+/g, "_")}.pdf`)
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          return
+        }
       }
-      console.log("Cover image URL:", issueData.cover_image_url)
-      // Fallback to cover image if it's a PDF
-      if (issueData.cover_image_url && issueData.cover_image_url.endsWith(".pdf")) {
+
+      console.log("[v0] handleDownloadIssue cover_image_url:", issueData?.cover_image_url)
+
+      // Fallback to cover image if it's actually a PDF
+      if (issueData?.cover_image_url && issueData.cover_image_url.endsWith(".pdf")) {
         const link = document.createElement("a")
         link.href = issueData.cover_image_url
         link.setAttribute("download", `${title.replace(/\s+/g, "_")}.pdf`)
@@ -135,14 +151,16 @@ export default function ArchivesPage() {
         return
       }
 
-      // Final fallback: try to get the first article in the issue
+      // Final fallback: first article in this issue with a PDF
       const { data: articlesData, error: articlesError } = await supabase
         .from("articles")
         .select("github_pdf_url, manuscript_file_url")
         .eq("volume", issueData.volume)
         .eq("issue", issueData.issue_number)
-        .eq("status", "published")
+        .or("status.eq.published,status.is.null")
         .limit(1)
+
+      console.log("[v0] handleDownloadIssue article fallback:", articlesData, "articlesError:", articlesError)
 
       if (articlesError) {
         console.error("Error fetching articles:", articlesError)
@@ -196,8 +214,17 @@ export default function ArchivesPage() {
     }
   }
 
-  const years = Array.from(new Set(issues.map((issue) => issue.year))).sort((a, b) => b - a)
-  const subjects = Array.from(new Set(articles.map((article) => article.subject_area))).sort()
+  const years = Array.from(
+    new Set(issues.map((issue) => issue.year).filter((y): y is number => typeof y === "number" && !Number.isNaN(y))),
+  ).sort((a, b) => b - a)
+
+  const subjects = Array.from(
+    new Set(
+      articles
+        .map((article) => article.subject_area)
+        .filter((s): s is string => typeof s === "string" && s.trim().length > 0),
+    ),
+  ).sort()
 
   if (loading) {
     return (
@@ -315,10 +342,14 @@ export default function ArchivesPage() {
                         {issue.is_special_issue && (
                           <Badge className="bg-yellow-400 text-yellow-900 border-0">Special Issue</Badge>
                         )}
-                        <Badge className="bg-green-400 text-green-900 border-0">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Published
-                        </Badge>
+                        {issue.status === "published" ? (
+                          <Badge className="bg-green-400 text-green-900 border-0">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Published
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-300 text-gray-800 border-0">Legacy</Badge>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -329,7 +360,11 @@ export default function ArchivesPage() {
                         <ul className="space-y-2 text-sm">
                           <li className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4 text-orange-500" />
-                            <span>Published: {new Date(issue.publication_date).toLocaleDateString()}</span>
+                            <span>
+                              {issue.publication_date
+                                ? `Published: ${new Date(issue.publication_date).toLocaleDateString()}`
+                                : "Publication date unavailable"}
+                            </span>
                           </li>
                           <li className="flex items-center space-x-2">
                             <BookOpen className="h-4 w-4 text-pink-500" />

@@ -17,8 +17,167 @@ import {
   Eye,
   Search,
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  let journalName = "SVLNS GDC Multidisciplinary Journal"
+  let journalTagline = ""
+  let journalEmail = "svlns.gdc@gmail.com"
+
+  try {
+    const { data: settings } = await supabase.from("journal_settings").select("*")
+    const getVal = (k: string): unknown => {
+      if (!settings || settings.length === 0) return undefined
+      const first = settings[0] as any
+      if (typeof first === "object" && first && "key" in first && "value" in first) {
+        const match = (settings as any[]).find((r) => r?.key === k)
+        return match?.value
+      }
+      return (first as any)?.[k]
+    }
+
+    const nameCandidate =
+      (getVal("journal_name") as string) || (getVal("name") as string) || (getVal("title") as string)
+
+    const taglineCandidate =
+      (getVal("tagline") as string) || (getVal("subtitle") as string) || (getVal("description") as string)
+
+    const emailCandidate =
+      (getVal("journal_email") as string) || (getVal("email") as string) || (getVal("contact_email") as string)
+
+    if (nameCandidate && typeof nameCandidate === "string") journalName = nameCandidate
+    if (taglineCandidate && typeof taglineCandidate === "string") journalTagline = taglineCandidate
+    if (emailCandidate && typeof emailCandidate === "string") journalEmail = emailCandidate
+  } catch (_e) {}
+
+  let currentIssue: any = null
+  let currentArticlesCount = 0
+  let currentTotalPages: number | string = "TBD"
+  let currentPubDateLabel = ""
+
+  try {
+    // Re-read settings to allow explicit overrides for current issue selection
+    const { data: settings2 } = await supabase.from("journal_settings").select("*")
+    const getVal2 = (k: string): any => {
+      if (!settings2 || settings2.length === 0) return undefined
+      const first = settings2[0] as any
+      if (first && (("setting_key" in first && "setting_value" in first) || ("key" in first && "value" in first))) {
+        const keyField = "setting_key" in first ? "setting_key" : "key" in first ? "key" : "setting_key"
+        const valField = "setting_value" in first ? "setting_value" : "value" in first ? "value" : "setting_value"
+        const row = (settings2 as any[]).find((r) => String(r?.[keyField] ?? "").toLowerCase() === k)
+        return row?.[valField]
+      }
+      return (first as any)?.[k]
+    }
+
+    const volStr = getVal2("current_volume") || getVal2("currentvolume")
+    const issStr = getVal2("current_issue_number") || getVal2("current_issue") || getVal2("currentissue")
+    const overrideVolume =
+      typeof volStr === "string" && !isNaN(Number.parseInt(volStr)) ? Number.parseInt(volStr) : undefined
+    const overrideIssue =
+      typeof issStr === "string" && !isNaN(Number.parseInt(issStr)) ? Number.parseInt(issStr) : undefined
+
+    const statusFilter = "status.is.null,status.eq.published,status.eq.Published"
+
+    async function getIssueByOverride(vol: number, iss: number) {
+      // Try matching issues.volume first
+      const res = await supabase
+        .from("issues")
+        .select("*")
+        .eq("volume", vol)
+        .eq("issue_number", iss)
+        .limit(1)
+        .maybeSingle()
+
+      // If column mismatch or not found, try issues.volume_number
+      if ((res.error && /column .*volume/i.test(res.error.message)) || !res.data) {
+        const res2 = await supabase
+          .from("issues")
+          .select("*")
+          .eq("volume_number", vol)
+          .eq("issue_number", iss)
+          .limit(1)
+          .maybeSingle()
+        return res2
+      }
+      return res
+    }
+
+    async function getLatestIssue() {
+      // Avoid referencing 'volume'/'volume_number' to prevent column-not-found errors
+      return await supabase
+        .from("issues")
+        .select("*")
+        .or(statusFilter)
+        .order("publication_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle()
+    }
+
+    let issueData: any = null
+    let issueErr: any = null
+
+    if (overrideVolume !== undefined && overrideIssue !== undefined) {
+      const r = await getIssueByOverride(overrideVolume, overrideIssue)
+      issueData = r.data
+      issueErr = r.error
+      if (!issueData) {
+        console.log("[v0] Override issue not found by volume; trying volume_number fallback:", {
+          overrideVolume,
+          overrideIssue,
+          error: r.error?.message,
+        })
+      }
+    } else {
+      const r = await getLatestIssue()
+      issueData = r.data
+      issueErr = r.error
+    }
+
+    if (!issueErr && issueData) {
+      currentIssue = issueData
+      const safeVolume = (currentIssue?.volume ?? currentIssue?.volume_number) as number | undefined
+
+      currentPubDateLabel = currentIssue.publication_date
+        ? new Date(currentIssue.publication_date).toLocaleDateString()
+        : "TBD"
+
+      // Fetch articles and compute totals. Articles table uses 'volume' and 'issue'.
+      const { data: arts, error: artsErr } = await supabase
+        .from("articles")
+        .select("id,page_count")
+        .or(statusFilter)
+        .eq("volume", safeVolume ?? -1)
+        .eq("issue", currentIssue.issue_number)
+
+      if (!artsErr && arts) {
+        currentArticlesCount = arts.length
+        const sum = arts.reduce((acc, a: any) => acc + (a?.page_count || 0), 0)
+        currentTotalPages = currentIssue.total_pages || (sum > 0 ? sum : "TBD")
+      }
+
+      console.log("[v0] Home current issue summary:", {
+        vol: safeVolume,
+        issue: currentIssue?.issue_number,
+        year: currentIssue?.year,
+        total_pages: currentTotalPages,
+        articles: currentArticlesCount,
+        overrideVolume,
+        overrideIssue,
+      })
+    } else {
+      console.log("[v0] Home current issue not resolved:", {
+        error: issueErr?.message,
+        overrideVolume,
+        overrideIssue,
+      })
+    }
+  } catch (e) {
+    console.log("[v0] Home current issue fetch error:", (e as any)?.message || e)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       {/* Hero Section */}
@@ -41,8 +200,10 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            SVLNS GDC
-            <span className="block text-3xl md:text-5xl mt-2 text-yellow-200">Multidisciplinary Journal</span>
+            {journalName}
+            {journalTagline && (
+              <span className="block text-3xl md:text-5xl mt-2 text-yellow-200">{journalTagline}</span>
+            )}
           </h1>
 
           <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
@@ -177,20 +338,30 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Current Issue</h2>
-            <p className="text-lg text-gray-600">Volume 1, Issue 1 - Inaugural Edition</p>
+            <p className="text-lg text-gray-600">
+              {currentIssue
+                ? `Volume ${(currentIssue?.volume ?? currentIssue?.volume_number) as number}, Issue ${
+                    currentIssue.issue_number
+                  } (${currentIssue.year ?? ""})`
+                : "Volume 1, Issue 1 - Inaugural Edition"}
+            </p>
           </div>
 
           <Card className="max-w-4xl mx-auto border-2 border-blue-200 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
               <div className="text-center">
-                <CardTitle className="text-2xl mb-2">Foundations of Multidisciplinary Research</CardTitle>
+                <CardTitle className="text-2xl mb-2">
+                  {currentIssue?.title || "Foundations of Multidisciplinary Research"}
+                </CardTitle>
                 <CardDescription className="text-blue-100 text-lg">
                   Celebrating 40 Years of Educational Excellence & Social Transformation
                 </CardDescription>
                 <div className="flex justify-center gap-4 mt-4">
-                  <Badge className="bg-white text-blue-600">Volume 1</Badge>
-                  <Badge className="bg-white text-blue-600">Issue 1</Badge>
-                  <Badge className="bg-white text-blue-600">January 2025</Badge>
+                  <Badge className="bg-white text-blue-600">{`Volume ${
+                    currentIssue?.volume ?? currentIssue?.volume_number ?? 1
+                  }`}</Badge>
+                  <Badge className="bg-white text-blue-600">{`Issue ${currentIssue?.issue_number ?? 1}`}</Badge>
+                  <Badge className="bg-white text-blue-600">{currentPubDateLabel || "January 2025"}</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -221,8 +392,12 @@ export default function HomePage() {
                   <div className="text-center mb-6">
                     <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-lg mb-4">
                       <BookOpen className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                      <p className="text-2xl font-bold text-gray-900">4 Articles</p>
-                      <p className="text-gray-600">58 Pages</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {currentArticlesCount} {currentArticlesCount === 1 ? "Article" : "Articles"}
+                      </p>
+                      <p className="text-gray-600">
+                        {typeof currentTotalPages === "number" ? `${currentTotalPages} Pages` : currentTotalPages}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -323,7 +498,7 @@ export default function HomePage() {
                 <Mail className="h-8 w-8" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Email</h3>
-              <p className="text-blue-100">svlns.gdc@gmail.com</p>
+              <p className="text-blue-100">{journalEmail}</p>
             </div>
 
             <div className="flex flex-col items-center">
