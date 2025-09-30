@@ -102,15 +102,14 @@ export interface EditorialBoardMember {
   id: string
   first_name: string
   last_name: string
-  email: string
   position: string
-  affiliation: string
-  expertise_areas: string[]
+  affiliation?: string
+  email?: string
   bio?: string
-  profile_image_url?: string
-  profile_url?: string
-  order_position: number
-  is_active: boolean
+  expertise_areas?: string[]
+  profile_url?: string   // ✅ New field for profile link
+  is_active?: boolean
+  order_position?: number
   created_at: string
   updated_at: string
 }
