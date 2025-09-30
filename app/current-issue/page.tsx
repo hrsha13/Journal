@@ -171,6 +171,17 @@ export default function CurrentIssuePage() {
                 <p className="text-gray-700">{currentIssue.description}</p>
               </div>
             )}
+            {currentIssue.issue_pdf_url && (
+  <Button
+    size="sm"
+    className="mt-4 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white"
+    onClick={() => window.open(currentIssue.issue_pdf_url, "_blank")}
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Download Full Issue (PDF)
+  </Button>
+)}
+
           </CardContent>
         </Card>
 
