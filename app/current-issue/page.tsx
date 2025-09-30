@@ -10,11 +10,9 @@ import type { Issue, Article } from "@/lib/supabase"
 
 export default function CurrentIssuePage() {
   const [currentIssue, setCurrentIssue] = useState<Issue | null>(null)
-  const [articles, setArticles] = useState<Article[]>([])
+  const [articles, setArticles] = useState<(Article & { github_url?: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [journalName, setJournalName] = useState<string>("SVLNS GDC Multidisciplinary Journal")
-  const [journalTagline, setJournalTagline] = useState<string>("")
 
   useEffect(() => {
     fetchCurrentIssue()
@@ -25,109 +23,47 @@ export default function CurrentIssuePage() {
       setLoading(true)
       setError(null)
 
-      // Fetch settings first to allow explicit overrides
-      const { data: settingsData, error: settingsError } = await supabase.from("journal_settings").select("*")
-
-      let overrideVolume: number | undefined
-      let overrideIssue: number | undefined
-
-      if (!settingsError && settingsData) {
-        const getVal = (k: string) => {
-          if (!settingsData || settingsData.length === 0) return undefined
-          const first = settingsData[0] as any
-          // Handle key/value row schema: (setting_key, setting_value) OR (key, value)
-          if (first && (("setting_key" in first && "setting_value" in first) || ("key" in first && "value" in first))) {
-            const keyField = "setting_key" in first ? "setting_key" : "key" in first ? "key" : "setting_key"
-            const valField = "setting_value" in first ? "setting_value" : "value" in first ? "value" : "setting_value"
-            const row = (settingsData as any[]).find((s) => String(s?.[keyField] ?? "").toLowerCase() === k)
-            return row?.[valField]
-          }
-          // Handle single-row schema: columns like journal_name, tagline, etc.
-          return (first as any)?.[k]
-        }
-
-        const name = getVal("journal_name") || getVal("name") || getVal("title")
-        const tagline = getVal("tagline") || getVal("subtitle") || getVal("description")
-        if (name && typeof name === "string") setJournalName(name)
-        if (tagline && typeof tagline === "string") setJournalTagline(tagline)
-
-        // Optional current issue overrides via settings
-        const volStr = getVal("current_volume") || getVal("currentvolume")
-        const issStr = getVal("current_issue_number") || getVal("current_issue") || getVal("currentissue")
-        if (volStr && !isNaN(Number.parseInt(volStr))) overrideVolume = Number.parseInt(volStr)
-        if (issStr && !isNaN(Number.parseInt(issStr))) overrideIssue = Number.parseInt(issStr)
-
-        console.log("[v0] Settings override parsed:", {
-          overrideVolume,
-          overrideIssue,
-          name,
-          tagline,
-          rawSettingsCount: settingsData.length,
-        })
-      }
-
-      let issueQuery = supabase.from("issues").select("*")
-
-      if (overrideVolume !== undefined && overrideIssue !== undefined) {
-        // If explicit override is configured, fetch that exact record
-        issueQuery = issueQuery.eq("volume", overrideVolume).eq("issue_number", overrideIssue).limit(1)
-      } else {
-        // Otherwise, pick the latest "published" with robust filter + NULLS LAST ordering
-        issueQuery = issueQuery
-          .or("status.is.null,status.eq.published,status.eq.Published") // case variants + legacy NULL
-          .order("year", { ascending: false, nullsFirst: false })
-          .order("volume", { ascending: false, nullsFirst: false })
-          .order("issue_number", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false, nullsFirst: false })
-          .limit(1)
-      }
-
-      const { data: issueData, error: issueError } = await issueQuery.single()
+      // Fetch the latest issue
+      const { data: issueData, error: issueError } = await supabase
+        .from("issues")
+        .select("*")
+        .eq("status", "published")
+        .order("year", { ascending: false })
+        .order("volume", { ascending: false })
+        .order("issue_number", { ascending: false })
+        .limit(1)
+        .single()
 
       if (issueError) {
-        console.log("[v0] Issue query error:", issueError)
+        console.error("Issue error:", issueError)
         setError("Failed to load current issue")
         return
       }
-
-      console.log("[v0] Current issue fetched:", {
-        id: issueData?.id,
-        volume: issueData?.volume,
-        issue: issueData?.issue_number,
-        year: issueData?.year,
-        status: issueData?.status,
-      })
-
       setCurrentIssue(issueData)
 
-      // Fetch published articles for the selected issue
+      // Fetch articles along with their github_url
       const { data: articlesData, error: articlesError } = await supabase
         .from("articles")
-        .select(
-          `
-            *,
-            primary_author:authors(first_name,last_name,affiliation)
-          `,
-        )
-        .or("status.is.null,status.eq.published,status.eq.Published")
+        .select(`
+          *,
+          primary_author:authors(first_name,last_name,affiliation),
+          github_url
+        `)
+        .eq("status", "published")
         .eq("volume", issueData.volume)
         .eq("issue", issueData.issue_number)
-        .order("pages", { ascending: true, nullsFirst: false })
+        .order("pages")
 
       if (articlesError) {
-        console.log("[v0] Articles query error:", articlesError)
+        console.error("Articles error:", articlesError)
         setError("Failed to load articles")
         return
       }
 
-      console.log("[v0] Articles fetched:", {
-        count: articlesData?.length ?? 0,
-        first: articlesData?.[0]?.id,
-      })
-
+      // Now articlesData is an array of objects which include a github_url if stored
       setArticles(articlesData || [])
-    } catch (error) {
-      console.log("[v0] Fetch unexpected error:", (error as any)?.message || error)
+    } catch (err) {
+      console.error("Fetch error:", err)
       setError("An unexpected error occurred")
     } finally {
       setLoading(false)
@@ -175,16 +111,15 @@ export default function CurrentIssuePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 py-12">
       <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
             Current Issue
           </h1>
-          <p className="text-xl text-gray-700">
-            Latest published articles from {journalName}
-            {journalTagline ? ` — ${journalTagline}` : ""}
-          </p>
+          <p className="text-xl text-gray-700">Latest published articles from SVLNS GDC Multidisciplinary Journal</p>
         </div>
 
+        {/* Issue Info */}
         <Card className="mb-8 border-0 shadow-xl bg-gradient-to-r from-orange-50 to-pink-50">
           <CardHeader className="bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-t-lg">
             <div className="flex justify-between items-start">
@@ -208,16 +143,12 @@ export default function CurrentIssuePage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md-grid-cols-3 gap-6">
               <div className="flex items-center space-x-3">
                 <Calendar className="h-6 w-6 text-orange-500" />
                 <div>
                   <p className="text-sm text-gray-600">Published</p>
-                  <p className="font-semibold">
-                    {currentIssue.publication_date
-                      ? new Date(currentIssue.publication_date).toLocaleDateString()
-                      : "TBD"}
-                  </p>
+                  <p className="font-semibold">{new Date(currentIssue.publication_date).toLocaleDateString()}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
@@ -243,18 +174,18 @@ export default function CurrentIssuePage() {
           </CardContent>
         </Card>
 
+        {/* Articles */}
         <section>
           <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Published Articles
           </h2>
-
           {articles.length === 0 ? (
             <Card className="text-center p-8">
               <p className="text-gray-600">No articles available for this issue yet.</p>
             </Card>
           ) : (
             <div className="space-y-6">
-              {articles.map((article, index) => (
+              {articles.map((article) => (
                 <Card
                   key={article.id}
                   className="hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur"
@@ -290,11 +221,17 @@ export default function CurrentIssuePage() {
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                        onClick={() => {
+                          if (article.github_url) {
+                            window.open(article.github_url, "_blank")
+                          } else {
+                            alert("Full text not available")
+                          }
+                        }}
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Read Full Text
                       </Button>
-
                       {article.manuscript_file_url && (
                         <Button
                           size="sm"
