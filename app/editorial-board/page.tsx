@@ -65,21 +65,6 @@ export default function EditorialBoardPage() {
             <button onClick={fetchBoardMembers} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Try Again
             </button>
-
-            <div className="mt-8 text-left max-w-3xl mx-auto">
-              <details className="rounded-md border bg-card p-3">
-                <summary className="cursor-pointer font-semibold">View legacy snapshot (fallback)</summary>
-                <div className="mt-3">
-                  <Image
-                    src="/images/editorial-board-legacy.png"
-                    alt="Editorial Board legacy snapshot"
-                    width={1200}
-                    height={610}
-                    className="w-full h-auto rounded-md"
-                  />
-                </div>
-              </details>
-            </div>
           </div>
         </div>
       </div>
@@ -93,15 +78,6 @@ export default function EditorialBoardPage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Editorial Board</h1>
             <p className="text-gray-700">No editorial board records were found.</p>
-            <div className="mt-6 rounded-md border bg-card p-2 max-w-4xl mx-auto">
-              <Image
-                src="/images/editorial-board-legacy.png"
-                alt="Editorial Board legacy snapshot"
-                width={1200}
-                height={610}
-                className="w-full h-auto rounded-md"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -124,7 +100,7 @@ export default function EditorialBoardPage() {
           </p>
         </div>
 
-        {/* Editor-in-Chief Section */}
+        {/* Editor-in-Chief */}
         {editorInChief && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-center mb-8 text-blue-800">Editor-in-Chief</h2>
@@ -145,15 +121,6 @@ export default function EditorialBoardPage() {
                       <p className="text-gray-600 mb-4">{editorInChief.affiliation}</p>
                       {editorInChief.bio && <p className="text-gray-700 mb-4">{editorInChief.bio}</p>}
 
-                      <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
-                        {Array.isArray(editorInChief.expertise_areas) &&
-                          editorInChief.expertise_areas.map((area, index) => (
-                            <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-800">
-                              {area}
-                            </Badge>
-                          ))}
-                      </div>
-
                       <div className="flex items-center gap-4 text-sm text-gray-600 justify-center md:justify-start">
                         <span className="inline-flex items-center gap-2">
                           <Mail className="h-4 w-4" />
@@ -165,6 +132,8 @@ export default function EditorialBoardPage() {
                             <span className="text-gray-500">Email unavailable</span>
                           )}
                         </span>
+
+                        {/* ✅ Profile Link */}
                         {editorInChief.profile_url && (
                           <>
                             <span className="text-gray-300" aria-hidden="true">
@@ -175,7 +144,6 @@ export default function EditorialBoardPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 hover:text-blue-600"
-                              aria-label="View profile"
                             >
                               <ExternalLink className="h-4 w-4" />
                               <span>Profile</span>
@@ -191,22 +159,14 @@ export default function EditorialBoardPage() {
           </div>
         )}
 
-        {/* Associate Editors Section */}
+        {/* Associate Editors */}
         {associateEditors.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-center mb-8 text-green-800">Associate Editors</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {associateEditors.map((member) => (
-                <Card
-                  key={member.id}
-                  className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300 hover:border-green-300"
-                >
+                <Card key={member.id} className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow">
                   <CardHeader className="text-center pb-4">
-                    <div className="mx-auto mb-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                        <User className="w-10 h-10 text-white" />
-                      </div>
-                    </div>
                     <CardTitle className="text-lg font-bold text-gray-900">
                       {member.first_name} {member.last_name}
                     </CardTitle>
@@ -216,21 +176,8 @@ export default function EditorialBoardPage() {
                   <CardContent className="pt-0">
                     {member.bio && <p className="text-sm text-gray-700 mb-4 line-clamp-3">{member.bio}</p>}
 
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {Array.isArray(member.expertise_areas) &&
-                        member.expertise_areas.map((area, expertiseIndex) => (
-                          <Badge
-                            key={expertiseIndex}
-                            variant="outline"
-                            className="text-xs border-green-300 text-green-700"
-                          >
-                            {area}
-                          </Badge>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs text-gray-600">
-                      <span className="inline-flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-3 text-xs text-gray-600 justify-center">
+                      <span className="inline-flex items-center gap-2">
                         <Mail className="h-3 w-3" />
                         {member.email ? (
                           <a href={`mailto:${member.email}`} className="hover:text-green-600 truncate">
@@ -240,6 +187,8 @@ export default function EditorialBoardPage() {
                           <span className="text-gray-500">Email unavailable</span>
                         )}
                       </span>
+
+                      {/* ✅ Profile Link */}
                       {member.profile_url && (
                         <>
                           <span className="text-gray-300" aria-hidden="true">
@@ -250,7 +199,6 @@ export default function EditorialBoardPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 hover:text-green-700"
-                            aria-label="View profile"
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span>Profile</span>
@@ -265,34 +213,20 @@ export default function EditorialBoardPage() {
           </div>
         )}
 
-        {/* Managing Editor Section */}
+        {/* Managing Editor */}
         {managingEditor && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-center mb-8 text-purple-800">Managing Editor</h2>
             <div className="max-w-2xl mx-auto">
-              <Card className="border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row items-center gap-6">
-                    <div className="flex-shrink-0">
-                      <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                        <User className="w-12 h-12 text-white" />
-                      </div>
-                    </div>
                     <div className="flex-1 text-center md:text-left">
                       <h3 className="text-xl font-bold text-gray-900 mb-2">
                         {managingEditor.first_name} {managingEditor.last_name}
                       </h3>
                       <p className="text-lg text-purple-600 font-semibold mb-2">{managingEditor.position}</p>
                       <p className="text-gray-600 mb-3">{managingEditor.affiliation}</p>
-                      {managingEditor.bio && <p className="text-gray-700 mb-4">{managingEditor.bio}</p>}
-
-                      <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
-                        {managingEditor.expertise_areas.map((area, index) => (
-                          <Badge key={index} variant="secondary" className="bg-purple-100 text-purple-800">
-                            {area}
-                          </Badge>
-                        ))}
-                      </div>
 
                       <div className="flex items-center gap-3 text-sm text-gray-600 justify-center md:justify-start">
                         <span className="inline-flex items-center gap-2">
@@ -305,6 +239,8 @@ export default function EditorialBoardPage() {
                             <span className="text-gray-500">Email unavailable</span>
                           )}
                         </span>
+
+                        {/* ✅ Profile Link */}
                         {managingEditor.profile_url && (
                           <>
                             <span className="text-gray-300" aria-hidden="true">
@@ -315,7 +251,6 @@ export default function EditorialBoardPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 hover:text-purple-600"
-                              aria-label="View profile"
                             >
                               <ExternalLink className="h-4 w-4" />
                               <span>Profile</span>
@@ -331,7 +266,7 @@ export default function EditorialBoardPage() {
           </div>
         )}
 
-        {/* Contact Information */}
+        {/* Contact Info */}
         <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg p-8 text-center mt-12">
           <h2 className="text-2xl font-bold mb-4">Contact Editorial Office</h2>
           <div className="flex flex-col md:flex-row justify-center items-center gap-6">
