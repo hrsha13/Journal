@@ -79,6 +79,7 @@ export interface Issue {
   cover_image_url?: string
   issue.pdf_url?: string
   pdf_url?: string
+  cover_image_url?: string 
   status: "draft" | "published" | "archived"
   article_count: number
   total_pages?: string
