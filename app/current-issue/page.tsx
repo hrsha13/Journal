@@ -244,9 +244,9 @@ export default function ArchivesPage() {
                             <Eye className="h-4 w-4 mr-2" />
                             View Issue
                           </Button>
-                         {pdf_url && (
+                        {issue.pdf_url && (
   <a
-    href={pdf_url}
+    href={issue.pdf_url}
     target="_blank"
     rel="noopener noreferrer"
     className="inline-flex items-center px-3 py-2 border border-orange-500 text-orange-600 rounded-md hover:bg-orange-50"
@@ -314,14 +314,29 @@ export default function ArchivesPage() {
                         <Eye className="h-4 w-4 mr-2" />
                         Read Full Text
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-purple-500 text-purple-600 hover:bg-purple-50 bg-transparent"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download PDF
-                      </Button>
+                     {article.github_url && (
+  <a
+    href={article.github_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-md"
+  >
+    <Eye className="h-4 w-4 mr-2" />
+    Read Full Text
+  </a>
+)}
+{article.manuscript_file_url && (
+  <a
+    href={article.manuscript_file_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 border border-purple-500 text-purple-600 rounded-md hover:bg-purple-50"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Download PDF
+  </a>
+)}
+
                     </div>
                   </CardContent>
                 </Card>
