@@ -77,6 +77,7 @@ export interface Issue {
   is_special_issue: boolean
   special_issue_theme?: string
   cover_image_url?: string
+  issue.pdf_url?: string
   status: "draft" | "published" | "archived"
   article_count: number
   total_pages?: string
