@@ -244,14 +244,18 @@ export default function ArchivesPage() {
                             <Eye className="h-4 w-4 mr-2" />
                             View Issue
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
-                          </Button>
+                         {issue.pdf_url && (
+  <a
+    href={issue.pdf_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 border border-orange-500 text-orange-600 rounded-md hover:bg-orange-50"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Download PDF
+  </a>
+)}
+
                         </div>
                       </div>
                     </div>
