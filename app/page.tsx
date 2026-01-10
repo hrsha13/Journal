@@ -224,7 +224,7 @@ export default async function HomePage() {
             </Badge>
             <Badge className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 text-sm">
               <BookOpen className="h-4 w-4 mr-2" />
-              ISSN: 3108-1053
+              ISSN: Applied
             </Badge>
             <Badge className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 text-sm">
               <Users className="h-4 w-4 mr-2" />

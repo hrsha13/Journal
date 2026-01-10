@@ -99,7 +99,7 @@ export function Footer() {
             </ul>
             <div className="mt-4 p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-500/30">
               <p className="text-xs text-yellow-300">
-                <strong>ISSN Status:</strong> 3108-1053
+                <strong>ISSN Status:</strong> Application Submitted
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function Footer() {
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent font-medium">
-                NAAC Accredited • ISSN: 3108-1053
+                NAAC Accredited • ISSN: Application in Process
               </span>
             </div>
           </div>

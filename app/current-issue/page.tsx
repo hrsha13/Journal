@@ -191,7 +191,7 @@ export default function ArchivesPage() {
             </Card>
           ) : (
             <div className="grid md:grid-cols-1 gap-6">
-              {filteredIssues.map((issue) => (
+              {filteredIssues.map((issue, index) => (
                 <Card
                   key={issue.id}
                   className="hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-r from-orange-50 to-pink-50"
@@ -237,24 +237,25 @@ export default function ArchivesPage() {
                           )}
                         </ul>
                         <div className="mt-4 flex space-x-2">
-                          <a
-                            href={`/issues/${issue.id}`}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white rounded-md text-sm font-medium transition-colors"
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Issue
-                          </a>
-                          {issue.pdf_url && (
-                            <a
-                              href={issue.pdf_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-2 border border-orange-500 text-orange-600 rounded-md hover:bg-orange-50 transition-colors"
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download PDF
-                            </a>
-                          )}
+                          </Button>
+                        {issue.pdf_url && (
+  <a
+    href={issue.pdf_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 border border-orange-500 text-orange-600 rounded-md hover:bg-orange-50"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Download PDF
+  </a>
+)}
+
                         </div>
                       </div>
                     </div>
@@ -272,7 +273,7 @@ export default function ArchivesPage() {
               Featured Articles
             </h2>
             <div className="space-y-6">
-              {articles.slice(0, 5).map((article) => (
+              {articles.slice(0, 5).map((article, index) => (
                 <Card
                   key={article.id}
                   className="hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur"
@@ -299,31 +300,43 @@ export default function ArchivesPage() {
                   <CardContent className="p-6">
                     <p className="text-sm text-gray-700 mb-4 line-clamp-3">{article.abstract}</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {article.keywords && article.keywords.map((keyword, idx) => (
+                      {article.keywords.map((keyword, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
                           {keyword}
                         </Badge>
                       ))}
                     </div>
                     <div className="flex space-x-2">
-                      <a
-                        href={`/articles/${article.id}`}
-                        className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-md text-sm font-medium transition-colors"
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Read Full Text
-                      </a>
-                      {article.manuscript_file_url && (
-                        <a
-                          href={article.manuscript_file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-2 border border-purple-500 text-purple-600 rounded-md hover:bg-purple-50 transition-colors"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </a>
-                      )}
+                      </Button>
+                     {article.github_url && (
+  <a
+    href={article.github_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-md"
+  >
+    <Eye className="h-4 w-4 mr-2" />
+    Read Full Text
+  </a>
+)}
+{article.manuscript_file_url && (
+  <a
+    href={article.manuscript_file_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center px-3 py-2 border border-purple-500 text-purple-600 rounded-md hover:bg-purple-50"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Download PDF
+  </a>
+)}
+
                     </div>
                   </CardContent>
                 </Card>
@@ -366,4 +379,4 @@ export default function ArchivesPage() {
       </div>
     </div>
   )
-}
+}, i want to add ahref  links , can you suggest  where to edit

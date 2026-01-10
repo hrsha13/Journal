@@ -203,7 +203,7 @@ export default function AboutPage() {
                 <h4 className="font-semibold mb-3">Publication Details</h4>
                 <ul className="space-y-2 text-sm">
                   <li>
-                    <strong>ISSN:</strong> 3108-1053
+                    <strong>ISSN:</strong> Applied (In Process)
                   </li>
                   <li>
                     <strong>Frequency:</strong> Quarterly
