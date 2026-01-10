@@ -1,35 +1,31 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { Navigation } from "@/components/navigation"
+import { Footer } from "@/components/footer"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Admin Portal - SVLNS GDC Journal",
-  description: "Administrative interface for managing the SVLNS GDC Multidisciplinary Journal",
+  title: "SVLNS GDC Multidisciplinary Journal",
+  description:
+    "A peer-reviewed, open-access journal dedicated to advancing multidisciplinary research and fostering academic excellence across diverse fields of study.",
+  generator: 'v0.dev'
 }
 
-export default function AdminLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Portal</h1>
-              <p className="text-sm text-gray-600">SVLNS GDC Multidisciplinary Journal Management</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">Administrator</p>
-                <p className="text-xs text-gray-500">svlns.gdc@gmail.com</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {children}
-    </div>
+    <html lang="en">
+      <body className={inter.className}>
+        <Navigation />
+        <main>{children}</main>
+        <Footer />
+      </body>
+    </html>
   )
 }
